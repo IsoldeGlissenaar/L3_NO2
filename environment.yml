@@ -1,0 +1,10 @@
+name: L3_NO2
+channels:
+- conda-forge
+dependencies:
+- python
+- xarray
+- numpy
+- cartopy
+- matplotlib
+- netCDF4
