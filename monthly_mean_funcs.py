@@ -511,10 +511,17 @@ def get_attrs(date):
     return attrs
 
 
+def add_nontime_vars(ds,files,var,var_dict):
+    f = os.path.join(files[-1])
+    data = xr.open_dataset(f)       
+    ds[var_dict['out_name']] = xr.DataArray(data = data[var].values*var_dict['conversion'],
+                                            dims = ['layer','independent_2'],
+                                            attrs = var_dict['attrs']
+                                            )
+    return ds
 
 
-
-def output_dataset(ds,attrs,variables_2d,corr_coef_uncer):
+def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     """
     Create output dataset.
     
@@ -530,12 +537,12 @@ def output_dataset(ds,attrs,variables_2d,corr_coef_uncer):
     ds2 : float32
         output dataset for saving.
     """
-    
+
     #Create dataset with main values and attributes
     ds2 = xr.Dataset(data_vars = {
         'tropospheric_NO2_column_number_density' : 
-                              xr.DataArray(data = ds.no2.values,
-                                           dims = ['latitude','longitude'],
+                              xr.DataArray(data = np.expand_dims(ds.no2.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
                                            attrs = {'description':'NO2 troposhperic vertical column number density',
                                                     'long_name':'NO2 VCD',
                                                     'standard_name':'troposphere_mole_content_of_nitrogendioxide',
@@ -543,23 +550,29 @@ def output_dataset(ds,attrs,variables_2d,corr_coef_uncer):
                                                     }    
                                            ),
         'tropospheric_NO2_column_number_density_temporal_std' : 
-                              xr.DataArray(data = ds.std1.values,
-                                           dims = ['latitude','longitude'],
+                              xr.DataArray(data = np.expand_dims(ds.std1.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
                                            attrs = {'description':'temporal uncertainty',
                                                     'long_name':'STD1 - temporal uncertainty',
-                                                    'unit':'molec/cm^2',
+                                                    'units':'molec/cm^2',
                                                     }
                               ),
         'tropospheric_NO2_column_number_density_uncertainty_kernel' : 
-                              xr.DataArray(data = ds.std2.values,
-                                           dims = ['latitude','longitude'],
+                              xr.DataArray(data = np.expand_dims(ds.std2.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
                                            attrs = {'description':'superobs uncertainty',
                                                     'long_name':'STD2 - superobs uncertainty',
-                                                    'unit':'molec/cm^2',
+                                                    'units':'molec/cm^2',
                                                     }
                               ),                             
 
-        ##
+        #
+        'time' : xr.DataArray(data = np.array([np.datetime64(f"{attrs['files'][0][20:24]}-{attrs['files'][0][24:26]}-{attrs['files'][0][26:28]} 00:00:00.000000000")]),
+                              dims = ['time'],
+                              attrs = {'description':'start date of monthly mean',
+                                       'standard_name':'time'
+                                       }
+                                ),
         'latitude' : xr.DataArray(data = ds.latitude.values,
                                   dims = ['latitude'],
                                   attrs = {'units':'degree_north',
@@ -573,6 +586,12 @@ def output_dataset(ds,attrs,variables_2d,corr_coef_uncer):
                                             'standard_name':'longitude',
                                             'bounds':'longitude_bounds'
                                             }
+                                   ),
+        'layer' : xr.DataArray(data = np.arange(1,35,1).astype(int),
+                                dims = ['layer'],
+                                attrs = {'units':'1',
+                                         'long_name':'layer dimension index'
+                                         }
                                    ),
                                     },
         attrs = {'Conventions':' ',  #<----- CF-1.8 HARP-1.0 in HCHO product
@@ -639,10 +658,37 @@ def output_dataset(ds,attrs,variables_2d,corr_coef_uncer):
         for var in variables:
             var_dict = variables[var]
             if var_dict['get_mean']:
-                ds2[var_dict['out_name']] = xr.DataArray(data = ds[var_dict['out_name']].values,
-                                                         dims = ['latitude','longitude'],
+                ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
+                                                         dims = ['time','latitude','longitude'],
                                                          attrs = var_dict['attrs']
                                                          )
+    #Add variables from variables_1d 
+    for var in variables_1d:
+        var_dict = variables_1d[var]
+        ds2 = add_nontime_vars(ds2,files,var,var_dict)
+    
+    #Add lat_bnds and lon_bnds
+    lat_bnds_1 = [-90]
+    for i in range(len(ds2.latitude.values)-1):
+        lat_bnds_1.append(ds2.latitude.values[i]*2-lat_bnds_1[i])
+    lat_bnds_2 = lat_bnds_1[1:]
+    lat_bnds_2.append(90)
+    ds2['latitude_bounds'] = xr.DataArray(data = np.array([lat_bnds_1,lat_bnds_2]).transpose(),
+                                          dims = ['latitude','independent_2'],
+                                          attrs = {'long_name' : 'grid latitude bounds',
+                                                   'units' : 'degree north'}
+                                          )
+    #TODO This is geos-chem specific!
+    lon_bnds_1 = [178.75,-178.75]
+    for i in range(1,len(ds2.longitude.values)-1):
+        lon_bnds_1.append(ds2.longitude.values[i]*2-lon_bnds_1[i])
+    lon_bnds_2 = lon_bnds_1[1:]
+    lon_bnds_2.append(178.75)
+    ds2['longitude_bounds'] = xr.DataArray(data = np.array([lon_bnds_1,lon_bnds_2]).transpose(),
+                                          dims = ['longitude','independent_2'],
+                                          attrs = {'long_name' : 'grid longitude bounds',
+                                                   'units' : 'degree east'}
+                                          )
         
     return ds2
     

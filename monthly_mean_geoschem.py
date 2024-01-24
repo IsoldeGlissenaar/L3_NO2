@@ -13,7 +13,7 @@ TROPOMI (2018-05-01 - 2021-12-31).
 
 from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files_flat
 from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars
-
+import numpy as np
 
 def settings():
     # TODO add averaging kernel
@@ -140,8 +140,18 @@ def settings():
                     }
     
     #List of none time-dependent variables to read
-    variables_1d = {'tm5_constant_a' : {'out_name':'tm5_sigma_a'},
-                    'tm5_constant_b' : {'out_name':'tm5_sigma_b'}
+    variables_1d = {'tm5_constant_a' : {'conversion' : 1e-3, #Pa to hPa
+                                        'out_name':'tm5_sigma_a',
+                                        'attrs' : {'description' : 'tm5 sigma-values a, pressure = tm5_sigma_a + surface_pressure * tm5_sigma_b',
+                                                   'long_name' : 'tm5 sigma-values a',
+                                                   'units' : 'hPa'},
+                                        },
+                    'tm5_constant_b' : {'conversion' : 1e-3, #Pa to hPa
+                                        'out_name':'tm5_sigma_b',
+                                        'attrs' : {'description' : 'tm5 sigma-values b, pressure = tm5_sigma_a + surface_pressure * tm5_sigma_b',
+                                                   'long_name' : 'tm5 sigma-values b',
+                                                   'units' : 'hPa'},
+                                        },
                     }
     
     #Variables to calculate 2D
@@ -172,18 +182,21 @@ def main():
     #Get settings
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
 
-    #Get monthly mean
-    files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
-    ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
-    ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
-    del weights
-    ds_out = add_vars(ds_out,calc_vars)
-    
-    #Save to file
-    attrs = get_attrs(date)
-    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},corr_coef_uncer)
-    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/NO2_TROPOMI_{date}.nc')
-    del ds_out,ds2
+    dates = np.arange(201805,201813,1).astype(str)
+    for date in dates:
+        print(date)
+        #Get monthly mean
+        files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
+        ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
+        ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
+        del weights
+        ds_out = add_vars(ds_out,calc_vars)
+        
+        #Save to file
+        attrs = get_attrs(date)
+        ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
+        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/NO2_TROPOMI_{date}.nc')
+        del ds_out,ds2
 
 if __name__ == "__main__": 
     main()

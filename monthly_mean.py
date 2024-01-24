@@ -139,9 +139,21 @@ def settings():
                     }
     
     #List of none time-dependent variables to read
-    variables_1d = {'tm5_constant_a' : {'out_name':'tm5_sigma_a'},
-                    'tm5_constant_b' : {'out_name':'tm5_sigma_b'}
+    variables_1d = {
+                    # 'tm5_constant_a' : {'conversion' : 1e-3, #Pa to hPa
+                    #                     'out_name':'tm5_sigma_a',
+                    #                     'attrs' : {'description' : 'tm5 sigma-values a, pressure = tm5_sigma_a + surface_pressure * tm5_sigma_b',
+                    #                                'long_name' : 'tm5 sigma-values a',
+                    #                                'units' : 'hPa'},
+                    #                     },
+                    # 'tm5_constant_b' : {'conversion' : 1e-3, #Pa to hPa
+                    #                     'out_name':'tm5_sigma_b',
+                    #                     'attrs' : {'description' : 'tm5 sigma-values b, pressure = tm5_sigma_a + surface_pressure * tm5_sigma_b',
+                    #                                'long_name' : 'tm5 sigma-values b',
+                    #                                'units' : 'hPa'},
+                    #                     },
                     }
+    
         
     #Variables to calculate 2D
     calc_vars = {#'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
@@ -181,7 +193,7 @@ def main():
     
     #Save to file
     attrs = get_attrs(date)
-    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},corr_coef_uncer)
+    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
     ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/NO2_TROPOMI_{date}.nc')
     del ds_out,ds2
 
