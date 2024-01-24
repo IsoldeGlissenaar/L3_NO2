@@ -44,10 +44,10 @@ def settings():
                  }
     
     #Correlation coefficients for uncertainty calculation
-    corr_coef_uncer = {'c_scd' : 0,
+    corr_coef_uncer = {'c_scd' : 0.0,
                        'c_strat' : 0.3,
                        'c_amf' : 0.3,
-                       'c_re' : 0}
+                       'c_re' : 0.0}
     
     #List of uncertainty variables to read 
     uncertainty_vars = {'no2_superobs' :                  {'conversion' : 6.02214e19,
@@ -193,9 +193,9 @@ def main():
         ds_out = add_vars(ds_out,calc_vars)
         
         #Save to file
-        attrs = get_attrs(date)
+        attrs = get_attrs(date,ds_out)
         ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/NO2_TROPOMI_{date}.nc')
+        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_PAL__v020301-KNMI-{date}-fv0200.nc')
         del ds_out,ds2
 
 if __name__ == "__main__": 

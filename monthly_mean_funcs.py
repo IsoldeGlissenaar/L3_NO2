@@ -469,7 +469,7 @@ def add_vars(ds, calc_vars):
     
 
 
-def get_attrs(date):
+def get_attrs(date,ds_out):
     """
     Get attributes needed for output dataset
 
@@ -484,6 +484,10 @@ def get_attrs(date):
         Dictionary filled with information for the attributes for the L3 dataset.
 
     """
+    #Get geospatial resolution
+    geospatial_lat_res = ds_out.latitude.values[5]-ds_out.latitude.values[4]
+    geospatial_lon_res = ds_out.longitude.values[5]-ds_out.longitude.values[4]
+
     #Get array of available dates in month
     year = int(date[:4])
     month = int(date[4:6])
@@ -507,7 +511,9 @@ def get_attrs(date):
              'datetime_start': datetime_start,
              'datetime_stop': datetime_stop,
              'time_coverage_list': time_coverage_list,
-             'date_created': date_created}
+             'date_created': date_created,
+             'geospatial_lat_resolution': geospatial_lat_res,
+             'geospatial_lon_resolution': geospatial_lon_res}
     return attrs
 
 
@@ -620,7 +626,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'time_coverage_duration':'P1M',
                  'time_coverage_resolution':'P1M',
                  'standard_name_vocabulary':'CF Standard Name Table v82',
-                 'sensor_list':'TROPOMI/Sentinel 5 percursor',
+                 'sensor_list':'TROPOMI/Sentinel 5 precursor',
                  'platform':'S5P',
                  'sensor':'TROPOMI',
                  'key_variables':'tropospheric_NO2_column_number_density',   #<---- HCHO has second key variable
@@ -640,8 +646,8 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'tracking_id':'', #<----- ???
                  'id':'',
                  'product_version':'',
-                 'geospatial_lat_resolution':0.2,
-                 'geospatial_lon_resolution':0.2,
+                 'geospatial_lat_resolution':attrs['geospatial_lat_resolution'],
+                 'geospatial_lon_resolution':attrs['geospatial_lon_resolution'],
                  'List_of_L2_files':attrs['files'],
                  'time_coverage_start':attrs['files'][0][20:35],
                  'time_coverage_end':attrs['files'][-1][36:51],
@@ -667,6 +673,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
         var_dict = variables_1d[var]
         ds2 = add_nontime_vars(ds2,files,var,var_dict)
     
+
     #Add lat_bnds and lon_bnds
     lat_bnds_1 = [-90]
     for i in range(len(ds2.latitude.values)-1):
