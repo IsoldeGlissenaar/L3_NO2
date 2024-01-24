@@ -460,9 +460,7 @@ def add_vars(ds, calc_vars):
         var_dict = calc_vars[var]
         ds[var_dict['out_name']] = xr.DataArray(data=eval(var_dict['func']),
                                                 dims = ['latitude','longitude'])
-        
-    # ds['lat_bounds'] = 1#..
-    # ds['lon_bounds'] = 1#...
+    
     # ds['effective_day'] = 1 #...
     # ds['effective_time_of_day'] = 1 #....
     return ds
@@ -518,6 +516,10 @@ def get_attrs(date,ds_out):
 
 
 def add_nontime_vars(ds,files,var,var_dict):
+    """
+    Add non-time dependent variables, e.g. tm5_sigma_a
+    and tm5_sigma_b
+    """
     f = os.path.join(files[-1])
     data = xr.open_dataset(f)       
     ds[var_dict['out_name']] = xr.DataArray(data = data[var].values*var_dict['conversion'],

@@ -16,7 +16,7 @@ data = np.full((12,91,144),np.nan)
 
 dates_all = np.arange(201901,201913,1).astype(str)
 for i,date in enumerate(dates_all):
-    f = f'/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/NO2_TROPOMI_{date}.nc'
+    f = f'/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0200.nc'
     ds = xr.open_dataset(f)
     dates = f[57:63]
 

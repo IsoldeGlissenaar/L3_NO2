@@ -182,7 +182,7 @@ def main():
     #Get settings
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
 
-    dates = np.arange(201805,201813,1).astype(str)
+    dates = np.arange(202101,202113,1).astype(str)
     for date in dates:
         print(date)
         #Get monthly mean
@@ -195,7 +195,7 @@ def main():
         #Save to file
         attrs = get_attrs(date,ds_out)
         ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_PAL__v020301-KNMI-{date}-fv0200.nc')
+        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0200.nc')
         del ds_out,ds2
 
 if __name__ == "__main__": 

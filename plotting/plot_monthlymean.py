@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from mapplot_func import world_plot
 
-date = '201805'
+date = '201812'
 f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/CCI+p-L3-NO2_TC-TROPOMI_S5P_PAL__v020301-KNMI-{date}-fv0200.nc"
 ds = xr.open_dataset(f)
 dates = f[57:63]
