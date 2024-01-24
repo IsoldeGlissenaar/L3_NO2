@@ -456,15 +456,40 @@ def add_vars(ds, calc_vars):
 
     """
     for var in calc_vars:
-        print(var)
         var_dict = calc_vars[var]
-        ds[var_dict['out_name']] = xr.DataArray(data=eval(var_dict['func']),
-                                                dims = ['latitude','longitude'])
-    
+        if var_dict['do_func']:
+            print(var)
+            ds[var_dict['out_name']] = xr.DataArray(data=eval(var_dict['func']),
+                                                    dims = ['latitude','longitude'])    
     # ds['effective_day'] = 1 #...
     # ds['effective_time_of_day'] = 1 #....
     return ds
-    
+
+
+def add_count(ds,files,date):
+    """
+    Add count to monthly mean
+    """
+    cover = np.full((len(files),ds.dims['latitude'],ds.dims['longitude']),np.nan)
+    for i,file in enumerate(files):
+        data = xr.open_dataset(file)
+        cover[i,:,:] = data.covered_area_fraction.values
+    cover[cover>1e36] = np.nan
+
+    if date[4:6] in ['01','03','05','07','08','10','12']:
+        len_m = 31.
+    elif date[4:6] in ['04','06','09','11']:
+        len_m = 30.
+    elif date[4:6]=='02':
+        if np.mod(date[0:4],4)==0:  #If leap year
+            len_m = 29.
+        else:
+            len_m = 28.
+
+    ds['tropospheric_NO2_column_number_density_count'] = xr.DataArray(data=np.nansum(cover,axis=0)/len_m,
+                                                                      dims = ['latitude','longitude']
+                                                                     )  
+    return ds
 
 
 def get_attrs(date,ds_out):

@@ -12,7 +12,7 @@ TROPOMI (2018-05-01 - 2021-12-31).
 """
 
 from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files_flat
-from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars
+from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count
 import numpy as np
 
 def settings():
@@ -37,7 +37,7 @@ def settings():
 
     '''
     
-    date = '202101' 
+    date = '202012' 
 
     main_sets = {'dataset':'res_geos_chem',
                  'split_hems':False,
@@ -158,6 +158,7 @@ def settings():
     calc_vars = {'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
                                                                   'out_name' : 'NO2_slant_column_number_density_troposphere',
                                                                   'get_mean' : True,
+                                                                  'do_func' : True,
                                                                   'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
                                                                              'long_name' : 'NO2 trop SCD',
                                                                              'units' : 'molec/cm^2'}
@@ -165,10 +166,17 @@ def settings():
                  'qa_L3' :      {'func' : '~np.isnan(ds.no2.values)',
                                  'out_name' : 'qa_L3',
                                  'get_mean' : True,
+                                 'do_func' : True,
                                  'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
                                             'long_name' : 'data quality assurance value',
                                             'units' : '1'}
-                                },
+                                }, 
+                 'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
+                                                                   'get_mean' : True,
+                                                                   'do_func' : False,
+                                                                   'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage',
+                                                                              'units' : '1'}
+                                                                   }
                  }
     
    
@@ -179,24 +187,26 @@ def settings():
 
 
 def main():
+    import warnings
+    warnings.filterwarnings("ignore")
+
     #Get settings
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
 
-    dates = np.arange(202101,202113,1).astype(str)
-    for date in dates:
-        print(date)
-        #Get monthly mean
-        files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
-        ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
-        ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
-        del weights
-        ds_out = add_vars(ds_out,calc_vars)
-        
-        #Save to file
-        attrs = get_attrs(date,ds_out)
-        ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0200.nc')
-        del ds_out,ds2
+    print(date)
+    #Get monthly mean
+    files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
+    ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
+    ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
+    del weights
+    ds_out = add_vars(ds_out,calc_vars)
+    ds_out = add_count(ds_out,files,date)
+    
+    #Save to file
+    attrs = get_attrs(date,ds_out)
+    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
+    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0200.nc')
+    del ds_out,ds2
 
 if __name__ == "__main__": 
     main()
