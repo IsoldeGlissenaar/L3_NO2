@@ -190,7 +190,7 @@ def main():
     #Get settings
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
 
-    dates = np.arange(201805,201813,1).astype(str)
+    dates = np.arange(202101,202113,1).astype(str)
     for date in dates:
         print(date)
         #Get monthly mean

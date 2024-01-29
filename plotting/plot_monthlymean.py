@@ -12,31 +12,30 @@ import cartopy.crs as ccrs
 from mapplot_func import world_plot
 
 date = '201901'
-f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_{date}.nc"
+# f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_{date}.nc"
 
-# f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/CCI+p-L3-NO2_TC-TROPOMI_S5P_PAL__v020301-KNMI-{date}-fv0200.nc"
+f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc"
 ds = xr.open_dataset(f)
-dates = f[57:63]
 
 
 #Superobservation - weighted
-world_plot((ds.tropospheric_NO2_column_number_density/1e15)[:,:],ds.longitude,ds.latitude,
+world_plot((ds.tropospheric_NO2_column_number_density/1e15)[0,:,:],ds.longitude,ds.latitude,
            cbar_label='10$^{15}$ molecules/cm$^2$',extend='both',
-           title='Weighted mean of superobservations: '+dates)
+           title='Weighted mean of superobservations: '+date)
 
 #STD1
-world_plot((ds.tropospheric_NO2_column_number_density_temporal_std/1e15)[:,:],ds.longitude,ds.latitude,
+world_plot((ds.tropospheric_NO2_column_number_density_temporal_std/1e15)[0,:,:],ds.longitude,ds.latitude,
            vmin=0,vmax=1,cmap='YlOrRd',extend='max',
            cbar_label='10$^{15}$ molecules/cm$^2$',title='STD1 - temporal uncertainty')
 
 #STD2
-world_plot((ds.tropospheric_NO2_column_number_density_uncertainty_kernel/1e15)[:,:],ds.longitude,ds.latitude,
-           vmin=0,vmax=10,cmap='Spectral_r',extend='max',
+world_plot((ds.tropospheric_NO2_column_number_density_uncertainty_kernel/1e15)[0,:,:],ds.longitude,ds.latitude,
+           vmin=0,vmax=1,cmap='YlOrRd',extend='max',
            cbar_label='10$^{15}$ molecules/cm$^2$',title='STD2 - measurement uncertainty')
 
 
 #Difference in STD1 and STD2
-world_plot(((ds.tropospheric_NO2_column_number_density_temporal_std-ds.tropospheric_NO2_column_number_density_uncertainty_kernel)/1e15)[:,:],
+world_plot(((ds.tropospheric_NO2_column_number_density_temporal_std-ds.tropospheric_NO2_column_number_density_uncertainty_kernel)/1e15)[0,:,:],
            ds.longitude,ds.latitude,
            vmin=-0.5,vmax=0.5,cmap='RdBu',extend='both',
            cbar_label='10$^{15}$ molecules/cm$^2$',title='std1 - std2')

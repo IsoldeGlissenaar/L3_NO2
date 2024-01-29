@@ -13,7 +13,7 @@ TROPOMI (2018-05-01 - 2021-12-31).
 
 
 from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files
-from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count
+from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count,add_time
 
 
 def settings():
@@ -65,7 +65,7 @@ def settings():
     variables_2d = {'no2_superobs' :                  {'conversion' : 6.02214e19,  #Mole/m2 to molecules/cm2
                                                        'out_name' : 'no2',
                                                        'get_mean' : False},
-                    # 'surface_pressure' :              {'conversion' : 1e-3,
+                    # 'surface_pressure' :              {'conversion' : 1e-2,
                     #                                     'out_name' : 'surface_pressure',
                     #                                     'get_mean' : True,
                     #                                     'attrs' : {'description':'surface pressure',
@@ -129,7 +129,7 @@ def settings():
                     #                                                 'long_name' : 'cloud fraction',
                     #                                                 'units' : '1'},
                     #                                      }
-                    # 'cloud_pressure' :                {'conversion' : 1e-3,
+                    # 'cloud_pressure' :                {'conversion' : 1e-2,
                     #                                     'out_name' : 'cloud_pressure',
                     #                                     'get_mean' : True,
                     #                                     'attrs' : {'description' : 'cloud pressure at optical centroid',
@@ -188,9 +188,10 @@ def main():
     files = get_list_of_files(date,dataset=main_sets['dataset'])
     ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
     ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
-    del weights
     ds_out = add_vars(ds_out,calc_vars)
     ds_out = add_count(ds_out,files,date)
+    ds_out = add_time(ds_out,files,date,weights)        
+    del weights
         
     #Save to file
     attrs = get_attrs(date,ds_out)

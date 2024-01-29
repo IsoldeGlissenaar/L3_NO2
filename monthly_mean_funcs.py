@@ -582,7 +582,7 @@ def add_time(ds,files,date,weights):
     ds['eff_time'] = xr.DataArray(data=time,
                               dims = ['latitude','longitude']
                               )
-    ds['local_time'] = xr.DataArray(data=mean_local_time,
+    ds['local_time'] = xr.DataArray(data=mean_local_time/86400.,
                               dims = ['latitude','longitude']
                               )
 
@@ -857,11 +857,11 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                             'standard_name':'effective date'
                                            }
                                     )
-    ds2['eff_time_of_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
-                                          dims = ['time','latitude','longitude'],
-                                          attrs = {'description':'effective time of day in seconds after midnight local solar time. UTC = local_solar_time - longitude/180',
-                                                   'standard_name':'effective time of day'
-                                                  }
+    ds2['effective_fractional_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
+                                                   dims = ['time','latitude','longitude'],
+                                                   attrs = {'description':'effective fractional day in local solar time. UTC = local_solar_time - longitude/180',
+                                                            'standard_name':'effective fractional day'
+                                                              }
                                          )
         
     return ds2
