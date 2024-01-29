@@ -17,7 +17,7 @@ from glob import glob
 import datetime
 
 
-def get_list_of_files_flat(date,dataset='res_geos_chem'):
+def get_list_of_files_flat(date,dataset):
     """
     Get list of filenames of superorbits.
 
@@ -26,7 +26,7 @@ def get_list_of_files_flat(date,dataset='res_geos_chem'):
     date : str
         Date in yyyymm.
     dataset : str, optional
-        Dataset to run. The default is 'new_qa'.
+        Dataset to run. 
 
     Returns
     -------
@@ -42,7 +42,7 @@ def get_list_of_files_flat(date,dataset='res_geos_chem'):
     return files
 
 
-def get_list_of_files(date,dataset='new_qa'):
+def get_list_of_files(date,dataset):
     """
     Get list of filenames of superorbits.
 
@@ -51,7 +51,7 @@ def get_list_of_files(date,dataset='new_qa'):
     date : str
         Date in yyyymm.
     dataset : str, optional
-        Dataset to run. The default is 'new_qa'.
+        Dataset to run. 
 
     Returns
     -------
@@ -76,7 +76,7 @@ def get_list_of_files(date,dataset='new_qa'):
 
 
 
-def get_mean_all_vars(variables_2d,files,dataset='new_qa',split_hems=True):
+def get_mean_all_vars(variables_2d,files,dataset,split_hems=True):
     """
     Get monthly mean of all superorbits for variables in assigned dictionary.
     
@@ -129,7 +129,7 @@ def get_mean_all_vars(variables_2d,files,dataset='new_qa',split_hems=True):
 
 
     
-def get_superobs(files,var,var_dict,dataset='new_qa',region='all'):
+def get_superobs(files,var,var_dict,dataset,region='all'):
     """
     Load superobservations for separate orbits for given month and put in 
     shared xarray Dataset.
@@ -289,7 +289,7 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
 
 
 
-def get_uncertainty_superobs(files,uncertainty_vars,region='all',dataset='new_qa'):
+def get_uncertainty_superobs(files,uncertainty_vars,region='all'):
     """
     Load superobservations for separate orbits for given month and put in 
     shared xarray Dataset.
