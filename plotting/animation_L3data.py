@@ -12,11 +12,13 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from matplotlib.animation import FuncAnimation,FFMpegWriter
 
-data = np.full((12,91,144),np.nan)
 
-dates_all = np.arange(201901,201913,1).astype(str)
+dates_all = np.concatenate([np.arange(201805,201813,1),np.arange(201901,201913,1),
+                           np.arange(202001,202013,1),np.arange(202101,202113,1)]).astype(str)
+
+data = np.full((len(dates_all),91,144),np.nan)
 for i,date in enumerate(dates_all):
-    f = f'/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0200.nc'
+    f = f'/nobackup/users/glissena/data/TROPOMI/out_L3/res_geos_chem/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc'
     ds = xr.open_dataset(f)
     dates = f[57:63]
 
@@ -50,7 +52,7 @@ def animate(i,ds,data,dates_all):
  
 # set ani variable to call the 
 # function recursively
-anim = FuncAnimation(fig, animate, interval=10000,frames=12,fargs=[ds,data,dates_all],repeat=True)
+anim = FuncAnimation(fig, animate, interval=10000,frames=len(dates_all),fargs=[ds,data,dates_all],repeat=True)
 
 mywriter = FFMpegWriter(fps=1)
 anim.save('/usr/people/glissena/Documents/figures/animation_geoschem.mp4',writer=mywriter)

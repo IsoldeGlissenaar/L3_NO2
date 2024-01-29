@@ -136,8 +136,16 @@ def get_superobs(files,var,var_dict,dataset,region='all'):
     
     Parameters
     ----------
-    date : str
-        Give year and month in yyyymm to retrieve superobservations from.
+    files : list
+        List of filenames to get superobservations from.
+    var : str
+        Name of variable to load superobservations for.
+    var_dict : dict
+        Settings dictionary for var.
+    dataset : str
+        Dataset of superobservations.
+    region : str
+        Hemisphere (SH or NH) to get dataset for. Defaults to 'all'.
 
     Returns
     -------
@@ -208,8 +216,10 @@ def weighted_mean_func(ds,var_dict):
     Parameters
     ----------
     ds : xr Dataset
-        xarray Dataset with superobservation
+        xarray Dataset with superobservation.
         orbits.
+    var_dict : dict
+        Settings dictionary for variable.
 
     Returns
     -------
@@ -247,6 +257,8 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         List of filenames of superobservations.
     uncertainty_vars : dict
         Dictionary with variables needed to determine uncertainty.
+    corr_coef_uncer : dict
+        Settings dictionary with correlation coefficients.
     split_hems : bool
         True/False calculate with split hemispheres (only possible when
         latitude dimension is an even number), can be used to relieve working
@@ -296,8 +308,12 @@ def get_uncertainty_superobs(files,uncertainty_vars,region='all'):
     
     Parameters
     ----------
-    date : str
-        Give year and month in yyyymm to retrieve superobservations from.
+    files : list
+        List of filenames of superobservations.
+    uncertainty_vars : dict
+        Dictionary of variables needed to determine uncertainty.
+    region : str
+        Hemisphere (SH or NH) to get dataset for. Defaults to 'all'.
 
     Returns
     -------
@@ -468,20 +484,35 @@ def add_vars(ds, calc_vars):
 
 def add_count(ds,files,date):
     """
-    Add count to monthly mean
+    Add count to monthly mean.
+
+    Parameters
+    ----------
+    ds : xr dataset
+        Dataset with monthly mean values to add to.
+    files : list
+        List of filenames of superobservations.
+    date : str
+        Date to get monthly mean for in yyyymm
+
+    Returns
+    -------
+    ds : xr dataset
+        Same as input ds but now with added calculated variables.
     """
-    cover = np.full((len(files),ds.dims['latitude'],ds.dims['longitude']),np.nan)
+    cover = np.full((len(files),ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
     for i,file in enumerate(files):
         data = xr.open_dataset(file)
         cover[i,:,:] = data.covered_area_fraction.values
     cover[cover>1e36] = np.nan
 
+    #Get number of days in month
     if date[4:6] in ['01','03','05','07','08','10','12']:
         len_m = 31.
     elif date[4:6] in ['04','06','09','11']:
         len_m = 30.
     elif date[4:6]=='02':
-        if np.mod(date[0:4],4)==0:  #If leap year
+        if np.mod(int(date[0:4]),4)==0:  #If leap year
             len_m = 29.
         else:
             len_m = 28.
@@ -495,13 +526,32 @@ def add_count(ds,files,date):
 
 def add_time(ds,files,date,weights):
     """
+    Add effective date and effective time of day
+    to monthly mean. 
+
+    Parameters
+    ----------
+    ds : xr dataset
+        Dataset with monthly mean values to add to.
+    files : list
+        List of filenames of superobservations.
+    date : str
+        Date to get monthly mean for in yyyymm.
+    weights : float
+        Weights used to take monthly mean.
+
+    Returns
+    -------
+    ds : xr dataset
+        Same as input ds but now with added calculated variables.
     """
-    delta_time = np.full((len(files),ds.dims['latitude'],ds.dims['longitude']),np.nan).astype('datetime64[s]')
+    #Load delta_time
+    delta_time = np.full((len(files),ds.sizes['latitude'],ds.sizes['longitude']),np.nan).astype('datetime64[s]')
     for i,file in enumerate(files):
         data = xr.open_dataset(file)
         delta_time[i,:,:] = data.delta_time.values.astype('datetime64[s]')
 
-    #Add time
+    #Add effective day of month
     day = np.full(delta_time.shape,np.nan).astype(str)
     time_of_day = np.full(delta_time.shape,np.nan).astype(str)
     nonan_time = (delta_time.astype(str)!='NaT')
@@ -512,12 +562,13 @@ def add_time(ds,files,date,weights):
     mean_day = np.full((weights.shape[1],weights.shape[2]),np.nan)
     zero_weight = (np.nansum(weights,axis=0)==0)
     mean_day[~zero_weight] = np.nansum(weights*day,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
-    time = np.full((ds.dims['latitude'],ds.dims['longitude']),np.nan).astype('datetime64[D]')
+    time = np.full((ds.sizes['latitude'],ds.sizes['longitude']),np.nan).astype('datetime64[D]')
     for i in range(time.shape[0]):
         for j in range(time.shape[1]):
             if ~np.isnan(mean_day[i,j]):
-                time[i,j] = f'{date[0:4]}-{date[4:6]}-{"{:02d}".format(int(mean_day[i,j]))}'
+                time[i,j] = f'{date[0:4]}-{date[4:6]}-{"{:02d}".format(int(np.round(mean_day[i,j])))}'
 
+    #Add effective time of day
     time_of_day[nonan_time] = delta_time[nonan_time].astype(str)
     time_of_day[nonan_time] = np.array([float(t[11:13])*60*60+float(t[14:16])*60+float(t[17:19]) for t in time_of_day[nonan_time]])
     time_of_day = time_of_day.astype(float)
@@ -546,6 +597,8 @@ def get_attrs(date,ds_out):
     ----------
     date : str
         Date used to retrieve L3 data for.
+    ds_out : xarray Dataset
+        Dataset with monthly mean values.
 
     Returns
     -------
@@ -589,7 +642,23 @@ def get_attrs(date,ds_out):
 def add_nontime_vars(ds,files,var,var_dict):
     """
     Add non-time dependent variables, e.g. tm5_sigma_a
-    and tm5_sigma_b
+    and tm5_sigma_b.
+
+    Parameters
+    ----------
+    ds : xr Dataset
+        Dataset with monthly mean values to add to.
+    files : list
+        List of superobservation files.
+    var : str
+        Name of variable to add.
+    var_dict : dict
+        Settings dictionary of added variable.
+    
+    Returns
+    -------
+    ds : float32
+        Same as input ds but with added variable.
     """
     f = os.path.join(files[-1])
     data = xr.open_dataset(f)       
@@ -610,6 +679,17 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
         xarray Dataset with superobservation
         orbits.
     attrs : dictionary
+        Dictionary with attributes to add to output.
+    variables_2d : dictionary
+        Settings dictionary for 2D variables.
+    variables_1d : dictionary
+        Settings dictionary for 1D variables.
+    corr_coef_uncer : dictionary
+        Settings dictionary with correlation 
+        coefficient values for uncertainty 
+        calculation.
+    files : list
+        List with filenames for superobservations.
     
     Returns
     -------
