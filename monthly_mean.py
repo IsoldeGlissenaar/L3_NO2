@@ -13,7 +13,7 @@ TROPOMI (2018-05-01 - 2021-12-31).
 
 
 from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files
-from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars
+from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count
 
 
 def settings():
@@ -190,11 +190,12 @@ def main():
     ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
     del weights
     ds_out = add_vars(ds_out,calc_vars)
-    
+    ds_out = add_count(ds_out,files,date)
+        
     #Save to file
-    attrs = get_attrs(date)
+    attrs = get_attrs(date,ds_out)
     ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/NO2_TROPOMI_{date}.nc')
+    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc')
     del ds_out,ds2
 
 if __name__ == "__main__": 

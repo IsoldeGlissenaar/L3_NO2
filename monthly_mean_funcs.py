@@ -489,6 +489,52 @@ def add_count(ds,files,date):
     ds['tropospheric_NO2_column_number_density_count'] = xr.DataArray(data=np.nansum(cover,axis=0)/len_m,
                                                                       dims = ['latitude','longitude']
                                                                      )  
+    
+    return ds
+    
+
+def add_time(ds,files,date,weights):
+    """
+    """
+    delta_time = np.full((len(files),ds.dims['latitude'],ds.dims['longitude']),np.nan).astype('datetime64[s]')
+    for i,file in enumerate(files):
+        data = xr.open_dataset(file)
+        delta_time[i,:,:] = data.delta_time.values.astype('datetime64[s]')
+
+    #Add time
+    day = np.full(delta_time.shape,np.nan).astype(str)
+    time_of_day = np.full(delta_time.shape,np.nan).astype(str)
+    nonan_time = (delta_time.astype(str)!='NaT')
+    day[nonan_time] = delta_time[nonan_time].astype('datetime64[D]').astype(str)
+    day[nonan_time] = np.array([d[8:10] for d in day[nonan_time]])
+    day = day.astype(float)
+
+    mean_day = np.full((weights.shape[1],weights.shape[2]),np.nan)
+    zero_weight = (np.nansum(weights,axis=0)==0)
+    mean_day[~zero_weight] = np.nansum(weights*day,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
+    time = np.full((ds.dims['latitude'],ds.dims['longitude']),np.nan).astype('datetime64[D]')
+    for i in range(time.shape[0]):
+        for j in range(time.shape[1]):
+            if ~np.isnan(mean_day[i,j]):
+                time[i,j] = f'{date[0:4]}-{date[4:6]}-{"{:02d}".format(int(mean_day[i,j]))}'
+
+    time_of_day[nonan_time] = delta_time[nonan_time].astype(str)
+    time_of_day[nonan_time] = np.array([float(t[11:13])*60*60+float(t[14:16])*60+float(t[17:19]) for t in time_of_day[nonan_time]])
+    time_of_day = time_of_day.astype(float)
+    time_of_day[time_of_day>86400] = time_of_day[time_of_day>86400]-86400
+    local_time = time_of_day+data.longitude.values/180*12*60*60
+    local_time[local_time<0] = 86400+local_time[local_time<0]
+    local_time[local_time>86400] = local_time[local_time>86400]-86400
+    mean_local_time = np.full((weights.shape[1],weights.shape[2]),np.nan)
+    mean_local_time[~zero_weight] = np.nansum(weights*local_time,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
+
+    ds['eff_time'] = xr.DataArray(data=time,
+                              dims = ['latitude','longitude']
+                              )
+    ds['local_time'] = xr.DataArray(data=mean_local_time,
+                              dims = ['latitude','longitude']
+                              )
+
     return ds
 
 
@@ -723,6 +769,20 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                           attrs = {'long_name' : 'grid longitude bounds',
                                                    'units' : 'degree east'}
                                           )
+    
+    #Effective time
+    ds2['eff_date'] = xr.DataArray(data = np.expand_dims(ds.eff_time.values,axis=0),
+                                   dims = ['time','latitude','longitude'],
+                                   attrs = {'description':'effective date of observation',
+                                            'standard_name':'effective date'
+                                           }
+                                    )
+    ds2['eff_time_of_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
+                                          dims = ['time','latitude','longitude'],
+                                          attrs = {'description':'effective time of day in seconds after midnight local solar time. UTC = local_solar_time - longitude/180',
+                                                   'standard_name':'effective time of day'
+                                                  }
+                                         )
         
     return ds2
     
