@@ -524,7 +524,7 @@ def add_count(ds,files,date):
     return ds
     
 
-def add_time(ds,files,date,weights):
+def add_time(ds,files,date,weights,split_hems=False):
     """
     Add effective date and effective time of day
     to monthly mean. 
@@ -539,45 +539,80 @@ def add_time(ds,files,date,weights):
         Date to get monthly mean for in yyyymm.
     weights : float
         Weights used to take monthly mean.
+    split_hems : bool
+        True/False calculate with split hemispheres (only possible when
+        latitude dimension is an even number), can be used to relieve working
+        memory of hardware.
 
     Returns
     -------
     ds : xr dataset
         Same as input ds but now with added calculated variables.
     """
-    #Load delta_time
-    delta_time = np.full((len(files),ds.sizes['latitude'],ds.sizes['longitude']),np.nan).astype('datetime64[s]')
-    for i,file in enumerate(files):
-        data = xr.open_dataset(file)
-        delta_time[i,:,:] = data.delta_time.values.astype('datetime64[s]')
 
-    #Add effective day of month
-    day = np.full(delta_time.shape,np.nan).astype(str)
-    time_of_day = np.full(delta_time.shape,np.nan).astype(str)
-    nonan_time = (delta_time.astype(str)!='NaT')
-    day[nonan_time] = delta_time[nonan_time].astype('datetime64[D]').astype(str)
-    day[nonan_time] = np.array([d[8:10] for d in day[nonan_time]])
-    day = day.astype(float)
+    split_lon=True
+    
+    if split_hems:
+        regions = ['SH','NH']
+        lat_idx = np.array([[0,ds.sizes['latitude']/2],[ds.sizes['latitude']/2,ds.sizes['latitude']]]).astype(int)
+    else:
+        regions = ['all']
+        lat_idx = np.array([[0,ds.sizes['latitude']],[-9999,-9999]]).astype(int)
+        
+    if split_lon:
+        regions_lon = ['WH','EH']
+        lon_idx = np.array([[0,ds.sizes['longitude']/2],[ds.sizes['longitude']/2,ds.sizes['longitude']]]).astype(int)
+    else:
+        regions_lon = ['all']
+        lon_idx = np.array([[0,ds.sizes['longitude']],[-9999,-9999]]).astype(int)
 
-    mean_day = np.full((weights.shape[1],weights.shape[2]),np.nan)
-    zero_weight = (np.nansum(weights,axis=0)==0)
-    mean_day[~zero_weight] = np.nansum(weights*day,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
     time = np.full((ds.sizes['latitude'],ds.sizes['longitude']),np.nan).astype('datetime64[D]')
-    for i in range(time.shape[0]):
-        for j in range(time.shape[1]):
-            if ~np.isnan(mean_day[i,j]):
-                time[i,j] = f'{date[0:4]}-{date[4:6]}-{"{:02d}".format(int(np.round(mean_day[i,j])))}'
+    mean_local_time = np.full((ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
 
-    #Add effective time of day
-    time_of_day[nonan_time] = delta_time[nonan_time].astype(str)
-    time_of_day[nonan_time] = np.array([float(t[11:13])*60*60+float(t[14:16])*60+float(t[17:19]) for t in time_of_day[nonan_time]])
-    time_of_day = time_of_day.astype(float)
-    time_of_day[time_of_day>86400] = time_of_day[time_of_day>86400]-86400
-    local_time = time_of_day+data.longitude.values/180*12*60*60
-    local_time[local_time<0] = 86400+local_time[local_time<0]
-    local_time[local_time>86400] = local_time[local_time>86400]-86400
-    mean_local_time = np.full((weights.shape[1],weights.shape[2]),np.nan)
-    mean_local_time[~zero_weight] = np.nansum(weights*local_time,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
+    for d,region in enumerate(regions):
+        for d2,region_lon in enumerate(regions_lon):
+            #Load delta_time
+            delta_time = np.full((len(files),(lat_idx[d,1]-lat_idx[d,0]),lon_idx[d2,1]-lon_idx[d2,0]),np.nan).astype('datetime64[s]')
+            for i,file in enumerate(files):
+                data = xr.open_dataset(file)
+                if region=='SH':
+                    data = data.sel(latitude=slice(-90,0))
+                elif region=='NH':
+                    data = data.sel(latitude=slice(0,90))  
+                if region_lon=='WH':
+                    data = data.sel(longitude=slice(-180,0))
+                elif region_lon=='EH':
+                    data = data.sel(longitude=slice(0,180))
+                delta_time[i,:,:] = data.delta_time.values.astype('datetime64[s]')
+                lon = data.longitude.values
+            del data
+    
+            #Add effective day of month
+            day = np.full(delta_time.shape,np.nan).astype('float32')
+            nonan_time = ~np.isnat(delta_time)
+            day[nonan_time] = np.array([d[8:10] for d in delta_time[nonan_time].astype('datetime64[D]').astype(str)]).astype('float32')
+            
+            weights_r = weights[:,lat_idx[d,0]:lat_idx[d,1],lon_idx[d2,0]:lon_idx[d2,1]]
+            mean_day = np.full((weights_r.shape[1],weights_r.shape[2]),np.nan)
+            zero_weight = (np.nansum(weights_r,axis=0)==0)
+            mean_day[~zero_weight] = np.nansum(weights_r*day,axis=0)[~zero_weight]/np.nansum(weights_r,axis=0)[~zero_weight]
+            for i in range(lat_idx[d,0],lat_idx[d,1]):
+                for j in range(lon_idx[d2,0],lon_idx[d2,1]):
+                    i2 = i-lat_idx[d,0]
+                    j2 = j-lon_idx[d2,0]
+                    if ~np.isnan(mean_day[i2,j2]):
+                        time[i,j] = f'{date[0:4]}-{date[4:6]}-{"{:02d}".format(int(np.round(mean_day[i2,j2])))}'
+            del day,mean_day
+    
+            #Add effective time of day 
+            time_of_day = np.full(delta_time.shape,np.nan)
+            time_of_day[nonan_time] = np.array([float(t[11:13])*60*60+float(t[14:16])*60+float(t[17:19]) for t in delta_time[nonan_time].astype(str)])
+            time_of_day[time_of_day>86400] = time_of_day[time_of_day>86400]-86400
+            local_time = time_of_day+lon/180*12*60*60
+            local_time[local_time<0] = 86400+local_time[local_time<0]
+            local_time[local_time>86400] = local_time[local_time>86400]-86400
+            mean_local_time[lat_idx[d,0]:lat_idx[d,1],lon_idx[d2,0]:lon_idx[d2,1]][~zero_weight] = np.nansum(weights_r*local_time,axis=0)[~zero_weight]/np.nansum(weights_r,axis=0)[~zero_weight]
+            del time_of_day,local_time,weights_r,zero_weight,nonan_time,lon
 
     ds['eff_time'] = xr.DataArray(data=time,
                               dims = ['latitude','longitude']
@@ -838,12 +873,14 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                           attrs = {'long_name' : 'grid latitude bounds',
                                                    'units' : 'degree north'}
                                           )
-    #TODO This is geos-chem specific!
-    lon_bnds_1 = [178.75,-178.75]
-    for i in range(1,len(ds2.longitude.values)-1):
+    #TODO This is different for geos-chem!
+    # lon_bnds_1 = [178.75,-178.75]
+    lon_bnds_1 = [-180]
+    for i in range(len(ds2.longitude.values)-1):
         lon_bnds_1.append(ds2.longitude.values[i]*2-lon_bnds_1[i])
     lon_bnds_2 = lon_bnds_1[1:]
-    lon_bnds_2.append(178.75)
+    # lon_bnds_2.append(178.75)
+    lon_bnds_2.append(180)
     ds2['longitude_bounds'] = xr.DataArray(data = np.array([lon_bnds_1,lon_bnds_2]).transpose(),
                                           dims = ['longitude','independent_2'],
                                           attrs = {'long_name' : 'grid longitude bounds',
