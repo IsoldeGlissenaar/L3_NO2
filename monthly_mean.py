@@ -12,7 +12,7 @@ TROPOMI (2018-05-01 - 2021-12-31).
 """
 
 
-from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files_flat
+from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files
 from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count,add_time
 
 
@@ -193,7 +193,7 @@ def main():
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
 
     #Get monthly mean
-    files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
+    files = get_list_of_files(date,dataset=main_sets['dataset'])
     ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
     ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
     ds_out = add_vars(ds_out,calc_vars)

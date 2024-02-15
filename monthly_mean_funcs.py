@@ -17,7 +17,7 @@ from glob import glob
 import datetime
 
 
-def get_list_of_files_flat(date,dataset):
+def get_list_of_files(date,dataset):
     """
     Get list of filenames of superorbits.
 
@@ -39,39 +39,6 @@ def get_list_of_files_flat(date,dataset):
     in_folder = f'/nobackup/users/glissena/data/TROPOMI/L2/superobs/{dataset}/{date[0:4]}_{date[4:6]}/'
     glob_pattern = os.path.join(in_folder, '*')
     files = sorted(glob(glob_pattern), key=os.path.getctime)
-    return files
-
-
-def get_list_of_files(date,dataset):
-    """
-    Get list of filenames of superorbits.
-
-    Parameters
-    ----------
-    date : str
-        Date in yyyymm.
-    dataset : str, optional
-        Dataset to run. 
-
-    Returns
-    -------
-    files : list
-        List of filenames of superorbits to run.
-
-    """
-    #Get array of available dates in month
-    year = int(date[:4])
-    month = int(date[4:6])
-    last_day = str(calendar.monthrange(year, month)[1]+1)
-    dates = np.arange(int(date+'01'),int(date+last_day),1).astype(str)
-    
-    #Get list of superobservation orbit files
-    files = []
-    for date in dates:
-        in_folder = f'/nobackup/users/glissena/data/TROPOMI/L2/superobs/{dataset}/{date[0:4]}_{date[4:6]}/{date}'
-        # files.extend(os.listdir(in_folder))
-        glob_pattern = os.path.join(in_folder, '*')
-        files.extend(sorted(glob(glob_pattern), key=os.path.getctime))
     return files
 
 
