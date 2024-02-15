@@ -191,24 +191,21 @@ def settings():
 def main():
     #Get settings
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
- 
-    import numpy as np
-    dates = np.arange(201903,201913,1).astype(str)
-    for date in dates:
-        #Get monthly mean
-        files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
-        ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
-        ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
-        ds_out = add_vars(ds_out,calc_vars)
-        ds_out = add_count(ds_out,files,date)
-        ds_out = add_time(ds_out,files,date,weights,split_hems=main_sets['split_hems'])        
-        del weights
-            
-        #Save to file
-        attrs = get_attrs(date,ds_out)
-        ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-        ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc')
-        del ds_out,ds2
+
+    #Get monthly mean
+    files = get_list_of_files_flat(date,dataset=main_sets['dataset'])
+    ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
+    ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
+    ds_out = add_vars(ds_out,calc_vars)
+    ds_out = add_count(ds_out,files,date)
+    ds_out = add_time(ds_out,files,date,weights,split_hems=main_sets['split_hems'])        
+    del weights
+        
+    #Save to file
+    attrs = get_attrs(date,ds_out)
+    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
+    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc')
+    del ds_out,ds2
 
 if __name__ == "__main__": 
     main()

@@ -550,7 +550,7 @@ def add_time(ds,files,date,weights,split_hems=False):
         Same as input ds but now with added calculated variables.
     """
 
-    split_lon=True
+    split_lon=False
     
     if split_hems:
         regions = ['SH','NH']
