@@ -12,8 +12,17 @@ TROPOMI (2018-05-01 - 2021-12-31).
 """
 
 import warnings
-from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files
-from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count,add_time
+from monthly_mean_funcs import (
+    get_attrs,
+    output_dataset,
+    get_list_of_files,
+    get_mean_all_vars, 
+    get_uncertainty,
+    add_vars,
+    add_count,
+    add_time
+    )
+
 warnings.filterwarnings("ignore")
 
 def settings():
@@ -68,7 +77,7 @@ def settings():
         'no2_superobs' :                  {'conversion' : 6.02214e19,  #Mole/m2 to molecules/cm2
                                             'out_name' : 'no2',
                                             'get_mean' : False},
-        'surface_pressure' :              {'conversion' : 1e-2,
+        'surface_pressure' :              {'conversion' : 1e-2,   #Pa to hPa
                                             'out_name' : 'surface_pressure',
                                             'get_mean' : True,
                                             'attrs' : {'description':'surface pressure',
@@ -82,9 +91,6 @@ def settings():
                                                         'long_name':'surface LER (440nm)',
                                                         'units':'1'}
                                             },
-        #'snow_ice_flag' :                 {'conversion' : 1,
-        #                                    'out_name' : 'land_water_mask',
-        #                                    'get_mean' : False},
         'covered_area_fraction' :         {'conversion' : 1,
                                             'out_name' : 'covered_area_fraction',
                                             'get_mean' : False},
@@ -143,14 +149,14 @@ def settings():
     
     #List of none time-dependent variables to read
     variables_1d = {
-        'tm5_constant_a' : {'conversion' : 1e-3, #Pa to hPa
+        'tm5_constant_a' : {'conversion' : 1e-2, #Pa to hPa
                             'out_name':'tm5_sigma_a',
                             'attrs' : {'description' : "tm5 sigma-values a, pressure = tm5_sigma_a +"+
                                                         "surface_pressure * tm5_sigma_b",
                                         'long_name' : 'tm5 sigma-values a',
                                         'units' : 'hPa'},
                             },
-        'tm5_constant_b' : {'conversion' : 1e-3, #Pa to hPa
+        'tm5_constant_b' : {'conversion' : 1e-2, #Pa to hPa
                             'out_name':'tm5_sigma_b',
                             'attrs' : {'description' : "tm5 sigma-values b, pressure = tm5_sigma_a + "+
                                                         "surface_pressure * tm5_sigma_b",
@@ -163,21 +169,21 @@ def settings():
     #Variables to calculate 2D
     calc_vars = {
         'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
-                                                            'out_name' : 'NO2_slant_column_number_density_troposphere',
-                                                            'get_mean' : True,
-                                                            'do_func' : True,
-                                                            'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
-                                                                        'long_name' : 'NO2 trop SCD',
-                                                                        'units' : 'molec/cm^2'}
+                                                         'out_name' : 'NO2_slant_column_number_density_troposphere',
+                                                         'get_mean' : True,
+                                                         'do_func' : True,
+                                                         'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
+                                                                    'long_name' : 'NO2 trop SCD',
+                                                                    'units' : 'molec/cm^2'}
                                                             },
-        'qa_L3' :      {'func' : '~np.isnan(ds.no2.values)',
-                        'out_name' : 'qa_L3',
-                        'get_mean' : True,
-                        'do_func' : True,
-                        'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
-                                    'long_name' : 'data quality assurance value',
-                                    'units' : '1'}
-                        }, 
+        'qa_L3' :                                      {'func' : '~np.isnan(ds.no2.values)',
+                                                        'out_name' : 'qa_L3',
+                                                        'get_mean' : True,
+                                                        'do_func' : True,
+                                                        'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
+                                                                    'long_name' : 'data quality assurance value',
+                                                                    'units' : '1'}
+                                                        }, 
         'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
                                                           'get_mean' : True,
                                                           'do_func' : False,

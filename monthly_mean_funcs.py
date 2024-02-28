@@ -163,16 +163,6 @@ def get_superobs(files,var,var_dict,dataset,region='all'):
 
     return ds
 
-    
-# def land_water(ds):    
-#       TODO : if var=='snow_ice_flag' in get_mean_all_vars -> use this function to calc land_water_mask
-#     land_water_mask = np.full((ds.sizes['time'],ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
-#     snow_ice = np.round(ds.land_water_mask.values,0)
-#     land_water_mask[((snow_ice>=1)&(snow_ice<=100))|(snow_ice==255)] = 0 #water
-#     land_water_mask[(snow_ice==0)|(snow_ice==101)|(snow_ice==103)] = 1 #land
-#     land_water_mask[(snow_ice==252)] = 2 #land-water-transition
-#     ds['land_water_mask'] = xr.DataArray(data = land_water_mask, dims = ['time','latitude','longitude'])
-#     return ds
 
 
 def weighted_mean_func(ds,var_dict):
@@ -669,12 +659,16 @@ def add_nontime_vars(ds,files,var,var_dict):
 
 
 def add_land_water_mask(ds,attrs):
-    if attrs['geospatial_lat_resolution'] == 0.2:
+    ## TODO Add docstring
+    resolution = attrs['geospatial_lat_resolution'].astype('float64')
+    resolution = np.round(resolution,1)
+    if resolution == 0.2:
         f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_02x02.nc'
-    elif attrs['geospatial_lat_resolution'] == 1:
+    elif resolution == 1.:
         f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_1x1.nc'
     else:
-        print('No land_water_mask file available for this resolution')
+        print(f"resolution: {resolution}")
+        print('WARNING: No land_water_mask file available for this resolution')
     lc = xr.open_dataset(f)
     ds['land_water_mask'] = xr.DataArray(data = lc.land_water_mask.values,
                                           dims = ['time','latitude','longitude'],
