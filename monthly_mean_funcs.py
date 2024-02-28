@@ -42,7 +42,6 @@ def get_list_of_files(date,dataset):
     return files
 
 
-
 def get_mean_all_vars(variables_2d,files,dataset,split_hems=True):
     """
     Get monthly mean of all superorbits for variables in assigned dictionary.
@@ -444,8 +443,6 @@ def add_vars(ds, calc_vars):
             print(var)
             ds[var_dict['out_name']] = xr.DataArray(data=eval(var_dict['func']),
                                                     dims = ['latitude','longitude'])    
-    # ds['effective_day'] = 1 #...
-    # ds['effective_time_of_day'] = 1 #....
     return ds
 
 
@@ -517,7 +514,7 @@ def add_time(ds,files,date,weights,split_hems=False):
         Same as input ds but now with added calculated variables.
     """
 
-    split_lon=False
+    split_lon=True
     
     if split_hems:
         regions = ['SH','NH']
@@ -609,8 +606,8 @@ def get_attrs(date,ds_out):
 
     """
     #Get geospatial resolution
-    geospatial_lat_res = ds_out.latitude.values[5]-ds_out.latitude.values[4]
-    geospatial_lon_res = ds_out.longitude.values[5]-ds_out.longitude.values[4]
+    geospatial_lat_res = np.round(ds_out.latitude.values[5]-ds_out.latitude.values[4],1)
+    geospatial_lon_res = np.round(ds_out.longitude.values[5]-ds_out.longitude.values[4],1)
 
     #Get array of available dates in month
     year = int(date[:4])
@@ -670,6 +667,22 @@ def add_nontime_vars(ds,files,var,var_dict):
                                             )
     return ds
 
+
+def add_land_water_mask(ds,attrs):
+    if attrs['geospatial_lat_resolution'] == 0.2:
+        f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_02x02.nc'
+    elif attrs['geospatial_lat_resolution'] == 1:
+        f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_1x1.nc'
+    else:
+        print('No land_water_mask file available for this resolution')
+    lc = xr.open_dataset(f)
+    ds['land_water_mask'] = xr.DataArray(data = lc.land_water_mask.values,
+                                          dims = ['time','latitude','longitude'],
+                                          attrs = {'description' : '0:water, 1:land, 2:land water transition',
+                                                   'long_name' : 'land sea mask',
+                                                   'units' : '1'}
+                                          )
+    return(ds)
 
 def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     """
@@ -827,8 +840,10 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     for var in variables_1d:
         var_dict = variables_1d[var]
         ds2 = add_nontime_vars(ds2,files,var,var_dict)
+        
+    #Add land water mask
+    ds2 = add_land_water_mask(ds2, attrs)
     
-
     #Add lat_bnds and lon_bnds
     lat_bnds_1 = [-90]
     for i in range(len(ds2.latitude.values)-1):

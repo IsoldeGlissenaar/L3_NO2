@@ -11,14 +11,13 @@ superobservation code by Pieter Rijsdijk) for
 TROPOMI (2018-05-01 - 2021-12-31). 
 """
 
-
+import warnings
 from monthly_mean_funcs import get_attrs,output_dataset,get_list_of_files
 from monthly_mean_funcs import get_mean_all_vars, get_uncertainty,add_vars,add_count,add_time
-
+warnings.filterwarnings("ignore")
 
 def settings():
     # TODO add averaging kernel
-    # TODO add effective time
     '''
     Create lists of variables to read from 
     superobservation files.
@@ -43,141 +42,148 @@ def settings():
                  }
         
     #Correlation coefficients for uncertainty calculation
-    corr_coef_uncer = {'c_scd' : 0,
-                       'c_strat' : 0.3,
-                       'c_amf' : 0.3,
-                       'c_re' : 0}
+    corr_coef_uncer = {
+        'c_scd' : 0,
+        'c_strat' : 0.3,
+        'c_amf' : 0.3,
+        'c_re' : 0
+                       }
     
     #List of uncertainty variables to read 
-    uncertainty_vars = {'no2_superobs' :                  {'conversion' : 6.02214e19,
-                                                           'out_name' : 'no2'},
-                        'no2_superobs_sig_amf' :          {'conversion' : 6.02214e19,
-                                                           'out_name' : 'sigma_amf'},
-                        'no2_superobs_sig_slant_random' : {'conversion' : 6.02214e19,
-                                                           'out_name' : 'sigma_sc'},
-                        'no2_superobs_sig_stratosphere' : {'conversion' : 6.02214e19,
-                                                           'out_name' : 'sigma_strat'},
-                        'no2_superobs_sig_re' :           {'conversion' : 6.02214e19,
-                                                           'out_name' : 'sigma_re'},
+    uncertainty_vars = {
+        'no2_superobs' :                  {'conversion' : 6.02214e19,
+                                            'out_name' : 'no2'},
+        'no2_superobs_sig_amf' :          {'conversion' : 6.02214e19,
+                                            'out_name' : 'sigma_amf'},
+        'no2_superobs_sig_slant_random' : {'conversion' : 6.02214e19,
+                                            'out_name' : 'sigma_sc'},
+        'no2_superobs_sig_stratosphere' : {'conversion' : 6.02214e19,
+                                            'out_name' : 'sigma_strat'},
+        'no2_superobs_sig_re' :           {'conversion' : 6.02214e19,
+                                            'out_name' : 'sigma_re'},
                         }
                     
     #List of 2d variables to read
-    variables_2d = {'no2_superobs' :                  {'conversion' : 6.02214e19,  #Mole/m2 to molecules/cm2
-                                                       'out_name' : 'no2',
-                                                       'get_mean' : False},
-                    'surface_pressure' :              {'conversion' : 1e-2,
-                                                        'out_name' : 'surface_pressure',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description':'surface pressure',
-                                                                    'long_name':'surface pressure',
-                                                                    'units':'hPa'}
-                                                        },
-                    'surface_albedo' :                {'conversion' : 1,
-                                                        'out_name' : 'surface_albedo',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description':'surface LER (440 nm)',
-                                                                    'long_name':'surface LER (440nm)',
-                                                                    'units':'1'}
-                                                        },
-                    #'snow_ice_flag' :                 {'conversion' : 1,
-                    #                                    'out_name' : 'land_water_mask',
-                    #                                    'get_mean' : False},
-                    'covered_area_fraction' :         {'conversion' : 1,
-                                                        'out_name' : 'covered_area_fraction',
-                                                        'get_mean' : False},
-                    'trop_col_precis' :               {'conversion' : 6.02214e19,
-                                                        'out_name' : 'tropospheric_NO2_column_number_density_uncertainty',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                                    ' number density assosciated with time-averaged propagated'+
-                                                                                    ' uncertainty of L2 input data (sigma2)',
-                                                                    'long_name' : 'tropospheric_NO2_column_number_density_uncertainty',
-                                                                    'units' : 'molec/cm^2'}
-                                                        },
-                    'scd' :                           {'conversion' : 6.02214e19,
-                                                        'out_name' : 'NO2_slant_column_number_density',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'NO2 slant column number density',
-                                                                    'long_name' : 'NO2 SCD',
-                                                                    'units' : 'molec/cm^2'}
-                                                        },
-                    'scd_precis' :                    {'conversion' : 6.02214e19,
-                                                        'out_name' : 'NO2_slant_column_number_density_uncertainty',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'NO2 slant column number density uncertainty',
-                                                                    'long_name' : 'NO2 SCDE',
-                                                                    'units' : 'molec/cm^2'}
-                                                        },
-                    'amf_trop_superobs' :             {'conversion' : 1,
-                                                        'out_name' : 'tropospheric_NO2_column_number_density_amf',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'tropospheric air mass factor',
-                                                                    'long_name' : 'NO2 tropospheric AMF (440nm)',
-                                                                    'units' : '1'}
-                                                        },
-                    'strat_column' :                  {'conversion' : 6.02214e19,
-                                                        'out_name' : 'NO2_stratospheric_column_number_density',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'Stratospheric NO2 vertical column density number density',
-                                                                    'long_name' : 'NO2 stratospheric VCD',
-                                                                    'units' : 'molec/cm^2'}
-                                                        },
-                    'cloud_radiance_fraction' :       {'conversion' : 1,
-                                                        'out_name' : 'cloud_fraction',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'effective cloud fraction',
-                                                                    'long_name' : 'cloud fraction',
-                                                                    'units' : '1'},
-                                                          },
-                    'cloud_pressure' :                {'conversion' : 1e-2,
-                                                        'out_name' : 'cloud_pressure',
-                                                        'get_mean' : True,
-                                                        'attrs' : {'description' : 'cloud pressure at optical centroid',
-                                                                    'long_name' : 'cloud_pressure',
-                                                                    'units' : 'hPa'}
-                                                            }
+    variables_2d = {
+        'no2_superobs' :                  {'conversion' : 6.02214e19,  #Mole/m2 to molecules/cm2
+                                            'out_name' : 'no2',
+                                            'get_mean' : False},
+        'surface_pressure' :              {'conversion' : 1e-2,
+                                            'out_name' : 'surface_pressure',
+                                            'get_mean' : True,
+                                            'attrs' : {'description':'surface pressure',
+                                                        'long_name':'surface pressure',
+                                                        'units':'hPa'}
+                                            },
+        'surface_albedo' :                {'conversion' : 1,
+                                            'out_name' : 'surface_albedo',
+                                            'get_mean' : True,
+                                            'attrs' : {'description':'surface LER (440 nm)',
+                                                        'long_name':'surface LER (440nm)',
+                                                        'units':'1'}
+                                            },
+        #'snow_ice_flag' :                 {'conversion' : 1,
+        #                                    'out_name' : 'land_water_mask',
+        #                                    'get_mean' : False},
+        'covered_area_fraction' :         {'conversion' : 1,
+                                            'out_name' : 'covered_area_fraction',
+                                            'get_mean' : False},
+        'trop_col_precis' :               {'conversion' : 6.02214e19,
+                                            'out_name' : 'tropospheric_NO2_column_number_density_uncertainty',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                        ' number density assosciated with time-averaged propagated'+
+                                                                        ' uncertainty of L2 input data (sigma2)',
+                                                        'long_name' : 'tropospheric_NO2_column_number_density_uncertainty',
+                                                        'units' : 'molec/cm^2'}
+                                            },
+        'scd' :                           {'conversion' : 6.02214e19,
+                                            'out_name' : 'NO2_slant_column_number_density',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'NO2 slant column number density',
+                                                        'long_name' : 'NO2 SCD',
+                                                        'units' : 'molec/cm^2'}
+                                            },
+        'scd_precis' :                    {'conversion' : 6.02214e19,
+                                            'out_name' : 'NO2_slant_column_number_density_uncertainty',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'NO2 slant column number density uncertainty',
+                                                        'long_name' : 'NO2 SCDE',
+                                                        'units' : 'molec/cm^2'}
+                                            },
+        'amf_trop_superobs' :             {'conversion' : 1,
+                                            'out_name' : 'tropospheric_NO2_column_number_density_amf',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'tropospheric air mass factor',
+                                                        'long_name' : 'NO2 tropospheric AMF (440nm)',
+                                                        'units' : '1'}
+                                            },
+        'strat_column' :                  {'conversion' : 6.02214e19,
+                                            'out_name' : 'NO2_stratospheric_column_number_density',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'Stratospheric NO2 vertical column density number density',
+                                                        'long_name' : 'NO2 stratospheric VCD',
+                                                        'units' : 'molec/cm^2'}
+                                            },
+        'cloud_radiance_fraction' :       {'conversion' : 1,
+                                            'out_name' : 'cloud_fraction',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'effective cloud fraction',
+                                                        'long_name' : 'cloud fraction',
+                                                        'units' : '1'},
+                                                },
+        'cloud_pressure' :                {'conversion' : 1e-2,
+                                            'out_name' : 'cloud_pressure',
+                                            'get_mean' : True,
+                                            'attrs' : {'description' : 'cloud pressure at optical centroid',
+                                                        'long_name' : 'cloud_pressure',
+                                                        'units' : 'hPa'}
+                                                }
                     }
     
     #List of none time-dependent variables to read
     variables_1d = {
-                    'tm5_constant_a' : {'conversion' : 1e-3, #Pa to hPa
-                                        'out_name':'tm5_sigma_a',
-                                        'attrs' : {'description' : 'tm5 sigma-values a, pressure = tm5_sigma_a + surface_pressure * tm5_sigma_b',
-                                                    'long_name' : 'tm5 sigma-values a',
-                                                    'units' : 'hPa'},
-                                        },
-                    'tm5_constant_b' : {'conversion' : 1e-3, #Pa to hPa
-                                        'out_name':'tm5_sigma_b',
-                                        'attrs' : {'description' : 'tm5 sigma-values b, pressure = tm5_sigma_a + surface_pressure * tm5_sigma_b',
-                                                    'long_name' : 'tm5 sigma-values b',
-                                                    'units' : 'hPa'},
-                                        },
+        'tm5_constant_a' : {'conversion' : 1e-3, #Pa to hPa
+                            'out_name':'tm5_sigma_a',
+                            'attrs' : {'description' : "tm5 sigma-values a, pressure = tm5_sigma_a +"+
+                                                        "surface_pressure * tm5_sigma_b",
+                                        'long_name' : 'tm5 sigma-values a',
+                                        'units' : 'hPa'},
+                            },
+        'tm5_constant_b' : {'conversion' : 1e-3, #Pa to hPa
+                            'out_name':'tm5_sigma_b',
+                            'attrs' : {'description' : "tm5 sigma-values b, pressure = tm5_sigma_a + "+
+                                                        "surface_pressure * tm5_sigma_b",
+                                        'long_name' : 'tm5 sigma-values b',
+                                        'units' : 'hPa'},
+                            },
                     }
     
         
     #Variables to calculate 2D
-    calc_vars = {'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
-                                                                   'out_name' : 'NO2_slant_column_number_density_troposphere',
-                                                                   'get_mean' : True,
-                                                                   'do_func' : True,
-                                                                   'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
-                                                                              'long_name' : 'NO2 trop SCD',
-                                                                              'units' : 'molec/cm^2'}
-                                                                   },
-                  'qa_L3' :      {'func' : '~np.isnan(ds.no2.values)',
-                                  'out_name' : 'qa_L3',
-                                  'get_mean' : True,
-                                  'do_func' : True,
-                                  'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
-                                             'long_name' : 'data quality assurance value',
-                                             'units' : '1'}
-                                 }, 
-                  'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
-                                                                    'get_mean' : True,
-                                                                    'do_func' : False,
-                                                                    'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage',
-                                                                               'units' : '1'}
-                                                                    }
+    calc_vars = {
+        'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
+                                                            'out_name' : 'NO2_slant_column_number_density_troposphere',
+                                                            'get_mean' : True,
+                                                            'do_func' : True,
+                                                            'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
+                                                                        'long_name' : 'NO2 trop SCD',
+                                                                        'units' : 'molec/cm^2'}
+                                                            },
+        'qa_L3' :      {'func' : '~np.isnan(ds.no2.values)',
+                        'out_name' : 'qa_L3',
+                        'get_mean' : True,
+                        'do_func' : True,
+                        'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
+                                    'long_name' : 'data quality assurance value',
+                                    'units' : '1'}
+                        }, 
+        'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
+                                                          'get_mean' : True,
+                                                          'do_func' : False,
+                                                          'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage',
+                                                                     'units' : '1'}
+                                                        }
                  }
     
     return date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer

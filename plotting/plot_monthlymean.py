@@ -41,12 +41,12 @@ world_plot(((ds.tropospheric_NO2_column_number_density_temporal_std-ds.troposphe
            cbar_label='10$^{15}$ molecules/cm$^2$',title='std1 - std2')
 
 
-# #Relative uncertainty - STD1
-# world_plot((ds.std1/ds.weighted_mean_no2)*100,ds.longitude,ds.latitude,
-#             vmin=0,vmax=100,cmap='YlOrRd',extend='max',
-#             cbar_label='%',title='Relative STD1 - temporal uncertainty')
+#Relative uncertainty - STD1
+world_plot((ds.tropospheric_NO2_column_number_density_temporal_std/ds.tropospheric_NO2_column_number_density)[0,:,:]*100,ds.longitude,ds.latitude,
+            vmin=0,vmax=100,cmap='YlOrRd',extend='max',
+            cbar_label='%',title='Relative STD1 - temporal uncertainty')
 
-# #Relative uncertainty - STD2
-# world_plot((ds.std2/ds.weighted_mean_no2)*100,ds.longitude,ds.latitude,
-#             vmin=0,vmax=100,cmap='YlOrRd',extend='max',
-#             cbar_label='%',title='Relative STD2 - measurement uncertainty')
+#Relative uncertainty - STD2
+world_plot((ds.std2/ds.weighted_mean_no2)*100,ds.longitude,ds.latitude,
+            vmin=0,vmax=100,cmap='YlOrRd',extend='max',
+            cbar_label='%',title='Relative STD2 - measurement uncertainty')
