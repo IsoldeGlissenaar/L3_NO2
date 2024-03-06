@@ -11,6 +11,7 @@ superobservation code by Pieter Rijsdijk) for
 TROPOMI (2018-05-01 - 2021-12-31). 
 """
 
+import sys
 import warnings
 from monthly_mean_funcs import (
     get_attrs,
@@ -76,10 +77,12 @@ def settings():
     variables_2d = {
         'no2_superobs' :                  {'conversion' : 6.02214e19,  #Mole/m2 to molecules/cm2
                                             'out_name' : 'no2',
-                                            'get_mean' : False},
+                                            'get_mean' : False,
+                                            'dimension' : '2d'},
         'surface_pressure' :              {'conversion' : 1e-2,   #Pa to hPa
                                             'out_name' : 'surface_pressure',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description':'surface pressure',
                                                         'long_name':'surface pressure',
                                                         'units':'hPa'}
@@ -87,25 +90,29 @@ def settings():
         'surface_albedo' :                {'conversion' : 1,
                                             'out_name' : 'surface_albedo',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description':'surface LER (440 nm)',
                                                         'long_name':'surface LER (440nm)',
                                                         'units':'1'}
                                             },
         'covered_area_fraction' :         {'conversion' : 1,
                                             'out_name' : 'covered_area_fraction',
-                                            'get_mean' : False},
+                                            'get_mean' : False,
+                                            'dimension' : '2d',},
         'trop_col_precis' :               {'conversion' : 6.02214e19,
                                             'out_name' : 'tropospheric_NO2_column_number_density_uncertainty',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description' : 'Uncertainty on the NO2 tropospheric vertical column'+
                                                                         ' number density assosciated with time-averaged propagated'+
-                                                                        ' uncertainty of L2 input data (sigma2)',
+                                                                        ' uncertainty of L2 input data (sigma_2)',
                                                         'long_name' : 'tropospheric_NO2_column_number_density_uncertainty',
                                                         'units' : 'molec/cm^2'}
                                             },
         'scd' :                           {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_slant_column_number_density',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description' : 'NO2 slant column number density',
                                                         'long_name' : 'NO2 SCD',
                                                         'units' : 'molec/cm^2'}
@@ -113,6 +120,7 @@ def settings():
         'scd_precis' :                    {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_slant_column_number_density_uncertainty',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description' : 'NO2 slant column number density uncertainty',
                                                         'long_name' : 'NO2 SCDE',
                                                         'units' : 'molec/cm^2'}
@@ -120,6 +128,7 @@ def settings():
         'amf_trop_superobs' :             {'conversion' : 1,
                                             'out_name' : 'tropospheric_NO2_column_number_density_amf',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description' : 'tropospheric air mass factor',
                                                         'long_name' : 'NO2 tropospheric AMF (440nm)',
                                                         'units' : '1'}
@@ -127,13 +136,15 @@ def settings():
         'strat_column' :                  {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_stratospheric_column_number_density',
                                             'get_mean' : True,
-                                            'attrs' : {'description' : 'Stratospheric NO2 vertical column density number density',
+                                            'dimension' : '2d',
+                                            'attrs' : {'description' : 'Stratospheric NO2 vertical column number density',
                                                         'long_name' : 'NO2 stratospheric VCD',
                                                         'units' : 'molec/cm^2'}
                                             },
         'cloud_radiance_fraction' :       {'conversion' : 1,
                                             'out_name' : 'cloud_fraction',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description' : 'effective cloud fraction',
                                                         'long_name' : 'cloud fraction',
                                                         'units' : '1'},
@@ -141,10 +152,19 @@ def settings():
         'cloud_pressure' :                {'conversion' : 1e-2,
                                             'out_name' : 'cloud_pressure',
                                             'get_mean' : True,
+                                            'dimension' : '2d',
                                             'attrs' : {'description' : 'cloud pressure at optical centroid',
                                                         'long_name' : 'cloud_pressure',
                                                         'units' : 'hPa'}
-                                                }
+                                                },
+        'kernel_troposphere' :            {'conversion' : 1,
+                                           'out_name' : 'NO2_averaging_kernel',
+                                           'get_mean' : True,
+                                           'dimension' : '3d',
+                                           'attrs': {'description' : 'Column averaging kernel',
+                                                     'long_name' : 'tropospheric averaging kernel',
+                                                     'units' : '1'},
+                         },
                     }
     
     #List of none time-dependent variables to read
@@ -165,6 +185,7 @@ def settings():
                             },
                     }
     
+    
         
     #Variables to calculate 2D
     calc_vars = {
@@ -172,6 +193,7 @@ def settings():
                                                          'out_name' : 'NO2_slant_column_number_density_troposphere',
                                                          'get_mean' : True,
                                                          'do_func' : True,
+                                                         'dimension' : '2d',
                                                          'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
                                                                     'long_name' : 'NO2 trop SCD',
                                                                     'units' : 'molec/cm^2'}
@@ -180,6 +202,7 @@ def settings():
                                                         'out_name' : 'qa_L3',
                                                         'get_mean' : True,
                                                         'do_func' : True,
+                                                        'dimension' : '2d',
                                                         'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
                                                                     'long_name' : 'data quality assurance value',
                                                                     'units' : '1'}
@@ -187,6 +210,7 @@ def settings():
         'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
                                                           'get_mean' : True,
                                                           'do_func' : False,
+                                                          'dimension' : '2d',
                                                           'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage',
                                                                      'units' : '1'}
                                                         }
@@ -203,6 +227,7 @@ def settings():
 def main():
     #Get settings
     date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
+    date = sys.argv[1]
 
     #Get monthly mean
     files = get_list_of_files(date,dataset=main_sets['dataset'])
@@ -216,7 +241,7 @@ def main():
     #Save to file
     attrs = get_attrs(date,ds_out)
     ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc')
+    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/test_CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc')
     del ds_out,ds2
 
 if __name__ == "__main__": 

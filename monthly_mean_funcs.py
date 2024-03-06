@@ -34,8 +34,6 @@ def get_list_of_files(date,dataset):
         List of filenames of superorbits to run.
 
     """
-   
-    #Get list of superobservation orbit files
     in_folder = f'/nobackup/users/glissena/data/TROPOMI/L2/superobs/{dataset}/{date[0:4]}_{date[4:6]}/'
     glob_pattern = os.path.join(in_folder, '*')
     files = sorted(glob(glob_pattern), key=os.path.getctime)
@@ -72,30 +70,49 @@ def get_mean_all_vars(variables_2d,files,dataset,split_hems=True):
     for var in variables_2d:
         print(var)
         var_dict = variables_2d[var]
-        if split_hems==True:
-            ds_SH = get_superobs(files,var,var_dict,dataset=dataset,region='SH')
-            lat_SH,lon_SH = ds_SH.latitude,ds_SH.longitude
-            weights_SH, weighted_mean_SH = weighted_mean_func(ds_SH,var_dict)
-            del ds_SH
-            ds_NH = get_superobs(files,var,var_dict,dataset=dataset,region='NH')
-            lat_NH,lon_NH = ds_NH.latitude,ds_NH.longitude
-            weights_NH, weighted_mean_NH = weighted_mean_func(ds_NH,var_dict)
-            del ds_NH
-            ds_out['latitude'] = xr.concat([lat_SH,lat_NH], dim="latitude")
-            ds_out['longitude'] = lon_SH
-            ds_out[var_dict['out_name']] = xr.concat([weighted_mean_SH,weighted_mean_NH], dim="latitude")
-            del lat_SH,lat_NH,lon_SH,lon_NH,weighted_mean_SH,weighted_mean_NH
-        elif split_hems==False:
-            ds = get_superobs(files,var,var_dict,dataset=dataset,region='all')
-            weights, ds_out[var_dict['out_name']] = weighted_mean_func(ds,var_dict)
-            ds_out['latitude'], ds_out['longitude'] = ds.latitude,ds.longitude
+        if var_dict['dimension']=='2d':
+            if split_hems==True:
+                ##Load variables in two parts to avoid RAM overload.
+                ds_SH = get_superobs(files,var,var_dict,dataset=dataset,region='SH')
+                lat_SH,lon = ds_SH.latitude,ds_SH.longitude
+                weights_SH, weighted_mean_SH = weighted_mean_func(ds_SH,var_dict)
+                del ds_SH
+                ds_NH = get_superobs(files,var,var_dict,dataset=dataset,region='NH')
+                lat_NH = ds_NH.latitude
+                weights_NH, weighted_mean_NH = weighted_mean_func(ds_NH,var_dict)
+                del ds_NH
+                ds_out['latitude'] = xr.concat([lat_SH,lat_NH], dim="latitude")
+                ds_out['longitude'] = lon
+                ds_out[var_dict['out_name']] = xr.concat([weighted_mean_SH,weighted_mean_NH], dim="latitude")
+                del lat_SH,lat_NH,lon,weighted_mean_SH,weighted_mean_NH
+            elif split_hems==False:
+                ds = get_superobs(files,var,var_dict,dataset=dataset,region='all')
+                weights, ds_out[var_dict['out_name']] = weighted_mean_func(ds,var_dict)
+                ds_out['latitude'], ds_out['longitude'] = ds.latitude,ds.longitude
+        elif var_dict['dimension']=='3d':
+            #3D arrays are to big to load in RAM so need to be split up
+            #in slices.
+            data = xr.open_dataset(files[-1])
+            ds_out[var_dict['out_name']] = xr.DataArray(data = np.full((data.sizes['layer'],
+                                                                    data.sizes['latitude'],data.sizes['longitude']),
+                                                                    np.nan).astype('float32'),
+                                                        dims = ['layer','latitude','longitude'])
+            slice_len = int(25)
+            while np.mod(data.sizes['latitude'],slice_len)!=0:
+                #While this is the case latitude cannot be split up
+                #equally with this slice_len, so decrease.
+                slice_len=int(slice_len-1)
+            for lat_idx in range(int(data.sizes['latitude']/slice_len)):
+                print(lat_idx)
+                ds = get_superobs(files,var,var_dict,dataset=dataset,region='all',idx=[lat_idx],slice_len=slice_len)
+                __, ds_out[var_dict['out_name']].values[:,lat_idx*slice_len:lat_idx*slice_len+slice_len,:] = weighted_mean_func(ds,var_dict,idx=[lat_idx],slice_len=slice_len)
     if split_hems==True:
         weights = np.concatenate([weights_SH,weights_NH],axis=1)
     return(ds_out,weights)
 
 
     
-def get_superobs(files,var,var_dict,dataset,region='all'):
+def get_superobs(files,var,var_dict,dataset,region='all',idx=[],slice_len=0):
     """
     Load superobservations for separate orbits for given month and put in 
     shared xarray Dataset.
@@ -111,17 +128,21 @@ def get_superobs(files,var,var_dict,dataset,region='all'):
     dataset : str
         Dataset of superobservations.
     region : str
-        Hemisphere (SH or NH) to get dataset for. Defaults to 'all'.
+        Hemisphere (SH or NH) to get dataset for. Defaults to 'all'.    
+    idx : list
+        When dimension of variable is 3d, idx gives
+        the idx where the slice starts. Defaults to empty 
+        list.
+    slice_len : int
+        When dimension of variable is 3d, gives the
+        length of the slices. Defaults to zero.
 
     Returns
     -------
     ds : xarray Dataset
         Dataset with all superobservations for given month.
     
-    """
-
-        
-    ##Create empty Dataset
+    """        
     #Get array size
     data = xr.open_dataset(files[-1])            
 
@@ -132,9 +153,16 @@ def get_superobs(files,var,var_dict,dataset,region='all'):
     elif region in ['SH','NH']:
         lat_dim = int(data.sizes['latitude']/2)
     
-    ds[var_dict['out_name']] = xr.DataArray(data = np.full((len(files),lat_dim,data.sizes['longitude']),
-                                                           np.nan).astype('float32'),
-                                            dims = ['time','latitude','longitude'])
+    if var_dict['dimension']=='2d':
+        ds[var_dict['out_name']] = xr.DataArray(data = np.full((len(files),lat_dim,data.sizes['longitude']),
+                                                            np.nan).astype('float32'),
+                                                dims = ['time','latitude','longitude'])
+    elif var_dict['dimension']=='3d':
+        layer_dim = int(data.sizes['layer'])
+        ds[var_dict['out_name']] = xr.DataArray(data = np.full((len(files),layer_dim,slice_len,data.sizes['longitude']),
+                                                            np.nan).astype('float32'),
+                                                dims = ['time','layer','latitude2','longitude'])
+        
     ds['re_rel'] = xr.DataArray(data = np.full((len(files),lat_dim,data.sizes['longitude']),
                                                             np.nan).astype('float32'),
                                 dims = ['time','latitude','longitude'])
@@ -150,8 +178,12 @@ def get_superobs(files,var,var_dict,dataset,region='all'):
             elif region=='NH':
                 data = data.sel(latitude=slice(0,90))                         
             valid = (data.covered_area_fraction.values<=1.1)     
-            ds[var_dict['out_name']].values[c1,:,:][valid] = data[var].values[valid]*var_dict['conversion']
-            ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
+            if var_dict['dimension']=='2d':
+                ds[var_dict['out_name']].values[c1,:,:][valid] = data[var].values[valid]*var_dict['conversion']
+                ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
+            elif var_dict['dimension']=='3d':
+                ds[var_dict['out_name']].values[c1,:,:,:] = data[var].values[:,idx[0]*slice_len:idx[0]*slice_len+slice_len,:]*var_dict['conversion']
+                ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
             c1=c1+1
     #Add longitude and latitude
     ds['latitude'] = xr.DataArray(data = data.latitude,
@@ -165,7 +197,7 @@ def get_superobs(files,var,var_dict,dataset,region='all'):
 
 
 
-def weighted_mean_func(ds,var_dict):
+def weighted_mean_func(ds,var_dict,idx=[],slice_len=0):
     """
     Calculate weighted mean.
     
@@ -175,7 +207,13 @@ def weighted_mean_func(ds,var_dict):
         xarray Dataset with superobservation.
         orbits.
     var_dict : dict
-        Settings dictionary for variable.
+        Settings dictionary for variable.    
+    idx : list
+        When dimension of variable is 3d, idx gives
+        the idx where the slice starts.
+    slice_len : int
+        When dimension of variable is 3d, gives the
+        length of the slices.
 
     Returns
     -------
@@ -187,12 +225,17 @@ def weighted_mean_func(ds,var_dict):
         
     """
     weights = (1-ds['re_rel'].values).astype('float32')
-    weighted_mean = np.full((weights.shape[1],weights.shape[2]),np.nan)
-    zero_weight = (np.nansum(weights,axis=0)==0)
-    weighted_mean[~zero_weight] = np.nansum(weights*ds[var_dict['out_name']].values,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
-    
-    weighted_mean = xr.DataArray(data = weighted_mean, dims = ['latitude','longitude'])
-    
+    if var_dict['dimension']=='2d':
+        weighted_mean = np.full((weights.shape[1],weights.shape[2]),np.nan)
+        zero_weight = (np.nansum(weights,axis=0)==0)
+        weighted_mean[~zero_weight] = np.nansum(weights*ds[var_dict['out_name']].values,axis=0)[~zero_weight]/np.nansum(weights,axis=0)[~zero_weight]
+        weighted_mean = xr.DataArray(data = weighted_mean, dims = ['latitude','longitude'])
+    elif var_dict['dimension']=='3d':
+        weights_3d = np.transpose(np.tile(np.expand_dims(weights[:,idx[0]*slice_len:idx[0]*slice_len+slice_len,:],axis=3),34),(0,3,1,2))
+        weighted_mean = np.full((weights_3d.shape[1],weights_3d.shape[2],weights_3d.shape[3]),np.nan)
+        zero_weight = (np.nansum(weights_3d,axis=0)==0)
+        weighted_mean[~zero_weight] = np.nansum(weights_3d*ds[var_dict['out_name']].values,axis=0)[~zero_weight]/np.nansum(weights_3d,axis=0)[~zero_weight]
+
     return weights, weighted_mean
 
 
@@ -433,7 +476,9 @@ def add_vars(ds, calc_vars):
             print(var)
             ds[var_dict['out_name']] = xr.DataArray(data=eval(var_dict['func']),
                                                     dims = ['latitude','longitude'])    
-    return ds
+    return ds       
+
+
 
 
 def add_count(ds,files,date):
@@ -659,7 +704,25 @@ def add_nontime_vars(ds,files,var,var_dict):
 
 
 def add_land_water_mask(ds,attrs):
-    ## TODO Add docstring
+    """
+    Load auxiliary land_water_mask and add to output 
+    dataset. For now only available for 0.2x0.2 degree
+    and 1x1 degree grids. More can be generated with
+    land_water_mask.py.
+    
+    Parameters
+    ----------
+    ds : xr Dataset
+        xarray Dataset with superobservation
+        orbits.
+    attrs : dictionary
+        Dictionary with attributes to add to output.
+    
+    Returns
+    -------
+    ds : float32
+        Dataset output including land_water_mask.
+    """
     resolution = attrs['geospatial_lat_resolution'].astype('float64')
     resolution = np.round(resolution,1)
     if resolution == 0.2:
@@ -720,16 +783,21 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
         'tropospheric_NO2_column_number_density_temporal_std' : 
                               xr.DataArray(data = np.expand_dims(ds.std1.values,axis=0),
                                            dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'temporal uncertainty',
-                                                    'long_name':'STD1 - temporal uncertainty',
+                                           attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                  ' number density associated with standard deviation of'+
+                                                                  ' L2 input data (sigma_1) within the cell',
+                                                    'long_name':'temporal standard deviation',
                                                     'units':'molec/cm^2',
                                                     }
                               ),
         'tropospheric_NO2_column_number_density_uncertainty_kernel' : 
                               xr.DataArray(data = np.expand_dims(ds.std2.values,axis=0),
                                            dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'superobs uncertainty',
-                                                    'long_name':'STD2 - superobs uncertainty',
+                                           attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                  ' number density associated with time-averaged propagated'+
+                                                                  ' uncertainty of L2 input data , without the profile'+
+                                                                  ' uncertainty contribution (sigma_3)',
+                                                    'long_name':'NO2 VCD uncertainty',
                                                     'units':'molec/cm^2',
                                                     }
                               ),                             
@@ -767,7 +835,8 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'institution':'KNMI',
                  'source':' ',
                  'project':'CCI+ ecv',
-                 'summary':'TROPOMI L3 tropospheric nitrogendioxide columns for one individual sensor generated as part of the CCI + percursors',
+                 'summary':'TROPOMI L3 tropospheric nitrogendioxide columns for one individual sensor generated as'+
+                           'part of the CCI + percursors',
                  'license':'',
                  'references':'',
                  'naming_authority':'KNMI',  #<--- or BIRA-IASB?
@@ -826,10 +895,17 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
         for var in variables:
             var_dict = variables[var]
             if var_dict['get_mean']:
-                ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
-                                                         dims = ['time','latitude','longitude'],
-                                                         attrs = var_dict['attrs']
-                                                         )
+                if var_dict['dimension']=='2d':
+                    ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
+                                                            dims = ['time','latitude','longitude'],
+                                                            attrs = var_dict['attrs']
+                                                            )
+                elif var_dict['dimension']=='3d':
+                    ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
+                                                            dims = ['time','layer','latitude','longitude'],
+                                                            attrs = var_dict['attrs']
+                                                            )
+                    
     #Add variables from variables_1d 
     for var in variables_1d:
         var_dict = variables_1d[var]
@@ -872,7 +948,8 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                     )
     ds2['effective_fractional_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
                                                    dims = ['time','latitude','longitude'],
-                                                   attrs = {'description':'effective fractional day in local solar time. UTC = local_solar_time - longitude/180',
+                                                   attrs = {'description':'effective fractional day in local solar time. '+
+                                                                          'UTC = local_solar_time - longitude/180',
                                                             'standard_name':'effective fractional day'
                                                               }
                                          )
