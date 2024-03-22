@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cf
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_201901.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0100.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -31,7 +31,7 @@ axs[0, 0].coastlines(resolution="50m", linewidth=0.3)
 im = axs[0, 0].pcolormesh(
     ds.longitude,
     ds.latitude,
-    ds.tropospheric_NO2_column_number_density / 1e15,
+    ds.tropospheric_NO2_column_number_density[0,:,:] / 1e15,
     vmin=0,
     vmax=10,
     cmap="Spectral_r",
@@ -44,7 +44,7 @@ axs[1, 0].coastlines(resolution="50m", linewidth=0.3)
 im = axs[1, 0].pcolormesh(
     ds.longitude,
     ds.latitude,
-    ds.tropospheric_NO2_column_number_density_temporal_std / 1e15,
+    ds.tropospheric_NO2_column_number_density_temporal_std[0,:,:] / 1e15,
     vmin=0,
     vmax=1,
     cmap="YlOrRd",
@@ -57,7 +57,7 @@ axs[2, 0].coastlines(resolution="50m", linewidth=0.3)
 im = axs[2, 0].pcolormesh(
     ds.longitude,
     ds.latitude,
-    ds.tropospheric_NO2_column_number_density_uncertainty_kernel / 1e15,
+    ds.tropospheric_NO2_column_number_density_uncertainty_kernel[0,:,:] / 1e15,
     vmin=0,
     vmax=1,
     cmap="YlOrRd",
@@ -74,7 +74,7 @@ axs[2, 0].text(0.01, 0.92, "(c)", fontsize=8, transform=axs[2, 0].transAxes)
 # axs[2,0].text(0.01,0.92,'(c)',fontsize=8,transform=axs[2,0].transAxes)
 
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_201906.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0100.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -83,7 +83,7 @@ axs[0, 1].coastlines(resolution="50m", linewidth=0.3)
 im = axs[0, 1].pcolormesh(
     ds.longitude,
     ds.latitude,
-    ds.tropospheric_NO2_column_number_density / 1e15,
+    ds.tropospheric_NO2_column_number_density[0,:,:] / 1e15,
     vmin=0,
     vmax=10,
     cmap="Spectral_r",
@@ -99,7 +99,7 @@ axs[1, 1].coastlines(resolution="50m", linewidth=0.3)
 im = axs[1, 1].pcolormesh(
     ds.longitude,
     ds.latitude,
-    ds.tropospheric_NO2_column_number_density_temporal_std / 1e15,
+    ds.tropospheric_NO2_column_number_density_temporal_std[0,:,:] / 1e15,
     vmin=0,
     vmax=1,
     cmap="YlOrRd",
@@ -115,7 +115,7 @@ axs[2, 1].coastlines(resolution="50m", linewidth=0.3)
 im = axs[2, 1].pcolormesh(
     ds.longitude,
     ds.latitude,
-    ds.tropospheric_NO2_column_number_density_uncertainty_kernel / 1e15,
+    ds.tropospheric_NO2_column_number_density_uncertainty_kernel[0,:,:] / 1e15,
     vmin=0,
     vmax=1,
     cmap="YlOrRd",
@@ -143,37 +143,37 @@ axs[2, 1].text(0.01, 0.92, "(f)", fontsize=8, transform=axs[2, 1].transAxes)
 #%%
 
 print("January 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_201901.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0100.nc"
 ds = xr.open_dataset(f)
 
 print("--")
-ams = ds.tropospheric_NO2_column_number_density.values[711, 924] / 1e15
+ams = ds.tropospheric_NO2_column_number_density.values[0, 711, 924] / 1e15
 print(f"Amsterdam mean: {np.round(ams,2)} 1e15 molecules/cm2")
-ams = ds.tropospheric_NO2_column_number_density_temporal_std.values[711, 924] / 1e15
+ams = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 711, 924] / 1e15
 print(f"Amsterdam std1: {np.round(ams,2)} 1e15 molecules/cm2")
 ams = (
-    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[711, 924] / 1e15
+    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 711, 924] / 1e15
 )
 print(f"Amsterdam std2: {np.round(ams,2)} 1e15 molecules/cm2")
 print("--")
-beij = ds.tropospheric_NO2_column_number_density.values[649, 1481] / 1e15
+beij = ds.tropospheric_NO2_column_number_density.values[0, 649, 1481] / 1e15
 print(f"Beijing mean: {np.round(beij,2)} 1e15 molecules/cm2")
-beij = ds.tropospheric_NO2_column_number_density_temporal_std.values[649, 1481] / 1e15
+beij = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 649, 1481] / 1e15
 print(f"Beijing std1: {np.round(beij,2)} 1e15 molecules/cm2")
 beij = (
-    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[649, 1481]
+    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 649, 1481]
     / 1e15
 )
 print(f"Beijing std2: {np.round(beij,2)} 1e15 molecules/cm2")
 print("--")
 afr = (
-    np.nanmax(ds.tropospheric_NO2_column_number_density.values[462:515, 797:1093])
+    np.nanmax(ds.tropospheric_NO2_column_number_density.values[0, 462:515, 797:1093])
     / 1e15
 )
 print(f"Africa mean: {np.round(afr,2)} 1e15 molecules/cm2")
 afr = (
     np.nanmax(
-        ds.tropospheric_NO2_column_number_density_temporal_std.values[462:515, 797:1093]
+        ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 462:515, 797:1093]
     )
     / 1e15
 )
@@ -181,7 +181,7 @@ print(f"Africa std1: {np.round(afr,2)} 1e15 molecules/cm2")
 afr = (
     np.nanmax(
         ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[
-            462:515, 797:1093
+            0, 462:515, 797:1093
         ]
     )
     / 1e15
@@ -192,37 +192,37 @@ print("---------------")
 
 
 print("June 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_201906.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0100.nc"
 ds = xr.open_dataset(f)
 
 print("--")
-ams = ds.tropospheric_NO2_column_number_density.values[711, 924] / 1e15
+ams = ds.tropospheric_NO2_column_number_density.values[0, 711, 924] / 1e15
 print(f"Amsterdam mean: {np.round(ams,2)} 1e15 molecules/cm2")
-ams = ds.tropospheric_NO2_column_number_density_temporal_std.values[711, 924] / 1e15
+ams = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 711, 924] / 1e15
 print(f"Amsterdam std1: {np.round(ams,2)} 1e15 molecules/cm2")
 ams = (
-    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[711, 924] / 1e15
+    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 711, 924] / 1e15
 )
 print(f"Amsterdam std2: {np.round(ams,2)} 1e15 molecules/cm2")
 print("--")
-beij = ds.tropospheric_NO2_column_number_density.values[649, 1481] / 1e15
+beij = ds.tropospheric_NO2_column_number_density.values[0, 649, 1481] / 1e15
 print(f"Beijing mean: {np.round(beij,2)} 1e15 molecules/cm2")
-beij = ds.tropospheric_NO2_column_number_density_temporal_std.values[649, 1481] / 1e15
+beij = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 649, 1481] / 1e15
 print(f"Beijing std1: {np.round(beij,2)} 1e15 molecules/cm2")
 beij = (
-    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[649, 1481]
+    ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 649, 1481]
     / 1e15
 )
 print(f"Beijing std2: {np.round(beij,2)} 1e15 molecules/cm2")
 print("--")
 afr = (
-    np.nanmax(ds.tropospheric_NO2_column_number_density.values[384:437, 952:1093])
+    np.nanmax(ds.tropospheric_NO2_column_number_density.values[0, 384:437, 952:1093])
     / 1e15
 )
 print(f"Africa mean: {np.round(afr,2)} 1e15 molecules/cm2")
 afr = (
     np.nanmax(
-        ds.tropospheric_NO2_column_number_density_temporal_std.values[384:437, 952:1093]
+        ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 384:437, 952:1093]
     )
     / 1e15
 )
@@ -230,7 +230,7 @@ print(f"Africa std1: {np.round(afr,2)} 1e15 molecules/cm2")
 afr = (
     np.nanmax(
         ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[
-            384:437, 952:1093
+            0, 384:437, 952:1093
         ]
     )
     / 1e15

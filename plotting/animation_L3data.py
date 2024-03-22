@@ -24,7 +24,7 @@ dates_all = np.concatenate(
 
 data = np.full((len(dates_all), 900, 1800), np.nan)
 for i, date in enumerate(dates_all):
-    f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/new_qa/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc"
+    f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc"
     ds = xr.open_dataset(f)
     dates = f[57:63]
 
@@ -32,8 +32,6 @@ for i, date in enumerate(dates_all):
 
 
 fig, ax = plt.subplots(dpi=400, subplot_kw={"projection": ccrs.PlateCarree()})
-ax.set_extent([-180, 180, -90, 90], crs=ccrs.PlateCarree())
-
 ax.coastlines(resolution="50m", linewidth=0.3)
 im = ax.pcolormesh(
     ds.longitude,

@@ -276,6 +276,8 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_SH = ds_SH.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_SH['std2'] = standev2(ds_SH,weights[:,:450,:],corr_coef_uncer)
         ds_SH = ds_SH.drop_vars(["sigma_amf","sigma_strat","sigma_sc","sigma_re"])
+        ds_SH = harp_uncertainties(ds_SH,weights[:,:450,:])
+        ds_SH = ds_SH.drop_vars(["random","systematic"])
         
         ds_NH = get_uncertainty_superobs(files,uncertainty_vars,region='NH')
         ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['no2']
@@ -283,6 +285,8 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_NH = ds_NH.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_NH['std2'] = standev2(ds_NH,weights[:,450:,:],corr_coef_uncer)
         ds_NH = ds_NH.drop_vars(["sigma_amf","sigma_strat","sigma_sc","sigma_re"])
+        ds_NH = harp_uncertainties(ds_NH,weights[:,450:,:])
+        ds_NH = ds_NH.drop_vars(["random","systematic"])
         
         ds_uncer = xr.concat([ds_SH,ds_NH], dim="latitude")
     elif split_hems==False:
@@ -292,9 +296,13 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_uncer = ds_uncer.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_uncer['std2'] = standev2(ds_uncer,weights,corr_coef_uncer)
         ds_uncer = ds_uncer.drop_vars(["sigma_amf","sigma_strat","sigma_sc","sigma_re"])
+        ds_uncer = harp_uncertainties(ds_uncer,weights)
+        ds_uncer = ds_uncer.drop_vars(["random","systematic"])
         
     ds['std1'] = ds_uncer['std1']
     ds['std2'] = ds_uncer['std2']
+    ds['HARP_random'] = ds_uncer['HARP_random']
+    ds['HARP_systematic'] = ds_uncer['HARP_systematic']
     return ds
 
 
@@ -365,6 +373,15 @@ def get_uncertainty_superobs(files,uncertainty_vars,region='all'):
     return ds
 
 
+def harp_uncertainties(ds, weights):
+    #TODO add docstring
+    ds["HARP_random"] = xr.DataArray(data = calc_corr_uncorr_uncer(weights, ds["random"], 0), 
+                                     dims = ['latitude','longitude'])
+    ds["HARP_systematic"] = xr.DataArray(data = calc_corr_uncorr_uncer(weights, ds["systematic"], 1), 
+                                     dims = ['latitude','longitude'])
+    return ds
+
+
 def calc_corr_uncorr_uncer(weights, sigma, c):
     """
     Calculate uncertainty propagation that is
@@ -426,18 +443,9 @@ def standev2(ds,weights,corr_coef_uncer):
         orbits.
     weights : array, float32
         weights used for averaging.
-    c_amf : float
-        correlation factor air mass factor in temporal uncertainty propagation,
-        the default is 0.3.
-    c_sc : float
-        correlation factor slant column in temporal uncertainty propagation,
-        the default is 0.
-    c_amf : float
-        correlation factor stratospheric in temporal uncertainty propagation,
-        the default is 0.3.
-    c_amf : float
-        correlation factor representativity in temporal uncertainty propagation,
-        the default is 0.
+    corr_coef_uncer : list
+        correlation factor of uncertainty components in temporal uncertainty 
+        propagation.
     
     Returns
     -------
@@ -800,6 +808,24 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                                     'long_name':'NO2 VCD uncertainty',
                                                     'units':'molec/cm^2',
                                                     }
+                                           ),
+        'tropospheric_NO2_column_number_density_uncertainty_random' : 
+                              xr.DataArray(data = np.expand_dims(ds.HARP_random.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
+                                           attrs = {'description':'Random uncertainty on the background-corrected'+
+                                                                  'NO2 tropospheric vertical column number density (HARP)',
+                                                    'long_name':'NO2 VCD random uncertainty',
+                                                    'units':'molec/cm^2',
+                                                    }       
+                                           ),
+        'tropospheric_NO2_column_number_density_uncertainty_systematic' : 
+                              xr.DataArray(data = np.expand_dims(ds.HARP_systematic.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
+                                           attrs = {'description':'Systematic uncertainty on the background-corrected'+
+                                                                  'NO2 tropospheric vertical column number density (HARP)',
+                                                    'long_name':'NO2 VCD systematic uncertainty',
+                                                    'units':'molec/cm^2',
+                                                    }
                               ),                             
 
         #
@@ -917,7 +943,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     #Add lat_bnds and lon_bnds
     lat_bnds_1 = [-90]
     for i in range(len(ds2.latitude.values)-1):
-        lat_bnds_1.append(ds2.latitude.values[i]*2-lat_bnds_1[i])
+        lat_bnds_1.append(np.round(ds2.latitude.values[i]*2-lat_bnds_1[i],2))
     lat_bnds_2 = lat_bnds_1[1:]
     lat_bnds_2.append(90)
     ds2['latitude_bounds'] = xr.DataArray(data = np.array([lat_bnds_1,lat_bnds_2]).transpose(),
@@ -929,7 +955,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     # lon_bnds_1 = [178.75,-178.75]
     lon_bnds_1 = [-180]
     for i in range(len(ds2.longitude.values)-1):
-        lon_bnds_1.append(ds2.longitude.values[i]*2-lon_bnds_1[i])
+        lon_bnds_1.append(np.round(ds2.longitude.values[i]*2-lon_bnds_1[i],2))
     lon_bnds_2 = lon_bnds_1[1:]
     # lon_bnds_2.append(178.75)
     lon_bnds_2.append(180)

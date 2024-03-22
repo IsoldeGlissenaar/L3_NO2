@@ -27,7 +27,6 @@ from monthly_mean_funcs import (
 warnings.filterwarnings("ignore")
 
 def settings():
-    # TODO add averaging kernel
     '''
     Create lists of variables to read from 
     superobservation files.
@@ -45,9 +44,9 @@ def settings():
 
     '''
     
-    date = '201902' 
+    date = '201901' 
 
-    main_sets = {'dataset':'new_qa',
+    main_sets = {'dataset':'02x02_t',
                  'split_hems':True,
                  }
         
@@ -71,6 +70,10 @@ def settings():
                                             'out_name' : 'sigma_strat'},
         'no2_superobs_sig_re' :           {'conversion' : 6.02214e19,
                                             'out_name' : 'sigma_re'},
+        'no2_superobs_random_uncertainty' :     {'conversion' : 6.02214e19,
+                                                 'out_name' : 'random'},
+        'no2_superobs_systematic_uncertainty' : {'conversion' : 6.02214e19,
+                                                 'out_name' : 'systematic'},
                         }
                     
     #List of 2d variables to read
@@ -99,16 +102,16 @@ def settings():
                                             'out_name' : 'covered_area_fraction',
                                             'get_mean' : False,
                                             'dimension' : '2d',},
-        'trop_col_precis' :               {'conversion' : 6.02214e19,
-                                            'out_name' : 'tropospheric_NO2_column_number_density_uncertainty',
-                                            'get_mean' : True,
-                                            'dimension' : '2d',
-                                            'attrs' : {'description' : 'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                        ' number density assosciated with time-averaged propagated'+
-                                                                        ' uncertainty of L2 input data (sigma_2)',
-                                                        'long_name' : 'tropospheric_NO2_column_number_density_uncertainty',
-                                                        'units' : 'molec/cm^2'}
-                                            },
+        # 'trop_col_precis' :               {'conversion' : 6.02214e19,
+        #                                     'out_name' : 'tropospheric_NO2_column_number_density_uncertainty',
+        #                                     'get_mean' : True,
+        #                                     'dimension' : '2d',
+        #                                     'attrs' : {'description' : 'Uncertainty on the NO2 tropospheric vertical column'+
+        #                                                                 ' number density assosciated with time-averaged propagated'+
+        #                                                                 ' uncertainty of L2 input data (sigma_2)',
+        #                                                 'long_name' : 'tropospheric_NO2_column_number_density_uncertainty',
+        #                                                 'units' : 'molec/cm^2'}
+        #                                     },
         'scd' :                           {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_slant_column_number_density',
                                             'get_mean' : True,
@@ -131,6 +134,14 @@ def settings():
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'tropospheric air mass factor',
                                                         'long_name' : 'NO2 tropospheric AMF (440nm)',
+                                                        'units' : '1'}
+                                            },
+        'amf_total_superobs' :             {'conversion' : 1,
+                                            'out_name' : 'total_NO2_column_number_density_amf',
+                                            'get_mean' : True,
+                                            'dimension' : '2d',
+                                            'attrs' : {'description' : 'total air mass factor',
+                                                        'long_name' : 'NO2 total AMF (440nm)',
                                                         'units' : '1'}
                                             },
         'strat_column' :                  {'conversion' : 6.02214e19,
@@ -157,14 +168,14 @@ def settings():
                                                         'long_name' : 'cloud_pressure',
                                                         'units' : 'hPa'}
                                                 },
-        'kernel_troposphere' :            {'conversion' : 1,
-                                           'out_name' : 'NO2_averaging_kernel',
-                                           'get_mean' : True,
-                                           'dimension' : '3d',
-                                           'attrs': {'description' : 'Column averaging kernel',
-                                                     'long_name' : 'tropospheric averaging kernel',
-                                                     'units' : '1'},
-                         },
+        'kernel_full' :            {'conversion' : 1,
+                                            'out_name' : 'NO2_averaging_kernel',
+                                            'get_mean' : True,
+                                            'dimension' : '3d',
+                                            'attrs': {'description' : 'Column averaging kernel',
+                                                      'long_name' : 'full averaging kernel',
+                                                      'units' : '1'},
+                          },
                     }
     
     #List of none time-dependent variables to read
@@ -176,12 +187,12 @@ def settings():
                                         'long_name' : 'tm5 sigma-values a',
                                         'units' : 'hPa'},
                             },
-        'tm5_constant_b' : {'conversion' : 1e-2, #Pa to hPa
+        'tm5_constant_b' : {'conversion' : 1, 
                             'out_name':'tm5_sigma_b',
                             'attrs' : {'description' : "tm5 sigma-values b, pressure = tm5_sigma_a + "+
                                                         "surface_pressure * tm5_sigma_b",
                                         'long_name' : 'tm5 sigma-values b',
-                                        'units' : 'hPa'},
+                                        'units' : '1'},
                             },
                     }
     
