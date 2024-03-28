@@ -168,13 +168,13 @@ def settings():
                                                         'long_name' : 'cloud_pressure',
                                                         'units' : 'hPa'}
                                                 },
-        'kernel_full' :            {'conversion' : 1,
-                                            'out_name' : 'NO2_averaging_kernel',
-                                            'get_mean' : True,
-                                            'dimension' : '3d',
-                                            'attrs': {'description' : 'Column averaging kernel',
-                                                      'long_name' : 'full averaging kernel',
-                                                      'units' : '1'},
+        'kernel_full' :                   {'conversion' : 1,
+                                           'out_name' : 'NO2_averaging_kernel',
+                                           'get_mean' : True,
+                                           'dimension' : '3d',
+                                           'attrs': {'description' : 'Column averaging kernel',
+                                                     'long_name' : 'full averaging kernel',
+                                                     'units' : '1'},
                           },
                     }
     
@@ -222,7 +222,7 @@ def settings():
                                                           'get_mean' : True,
                                                           'do_func' : False,
                                                           'dimension' : '2d',
-                                                          'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage',
+                                                          'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage (coverage divided by number of days)',
                                                                      'units' : '1'}
                                                         }
                  }

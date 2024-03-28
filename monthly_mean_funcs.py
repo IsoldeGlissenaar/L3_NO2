@@ -274,7 +274,7 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_SH['weighted_mean'] = ds.sel(latitude=slice(-90,0))['no2']
         ds_SH['std1'] = standev1(ds_SH,weights[:,:450,:])
         ds_SH = ds_SH.drop_vars(["no2","no_superobs","weighted_mean"])
-        ds_SH['std2'] = standev2(ds_SH,weights[:,:450,:],corr_coef_uncer)
+        ds_SH['std2'], ds_SH['std3'] = standev2(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         ds_SH = ds_SH.drop_vars(["sigma_amf","sigma_strat","sigma_sc","sigma_re"])
         ds_SH = harp_uncertainties(ds_SH,weights[:,:450,:])
         ds_SH = ds_SH.drop_vars(["random","systematic"])
@@ -283,7 +283,7 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['no2']
         ds_NH['std1'] = standev1(ds_NH,weights[:,450:,:])
         ds_NH = ds_NH.drop_vars(["no2","no_superobs","weighted_mean"])
-        ds_NH['std2'] = standev2(ds_NH,weights[:,450:,:],corr_coef_uncer)
+        ds_NH['std2'], ds_NH['std3'] = standev2(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
         ds_NH = ds_NH.drop_vars(["sigma_amf","sigma_strat","sigma_sc","sigma_re"])
         ds_NH = harp_uncertainties(ds_NH,weights[:,450:,:])
         ds_NH = ds_NH.drop_vars(["random","systematic"])
@@ -294,13 +294,14 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_uncer['weighted_mean'] = ds.no2
         ds_uncer['std1'] = standev1(ds_uncer,weights)
         ds_uncer = ds_uncer.drop_vars(["no2","no_superobs","weighted_mean"])
-        ds_uncer['std2'] = standev2(ds_uncer,weights,corr_coef_uncer)
+        ds_uncer['std2'], ds_uncer['std3'] = standev2(ds_uncer,ds,weights,corr_coef_uncer)
         ds_uncer = ds_uncer.drop_vars(["sigma_amf","sigma_strat","sigma_sc","sigma_re"])
         ds_uncer = harp_uncertainties(ds_uncer,weights)
         ds_uncer = ds_uncer.drop_vars(["random","systematic"])
         
     ds['std1'] = ds_uncer['std1']
     ds['std2'] = ds_uncer['std2']
+    ds['std3'] = ds_uncer['std3']
     ds['HARP_random'] = ds_uncer['HARP_random']
     ds['HARP_systematic'] = ds_uncer['HARP_systematic']
     return ds
@@ -432,7 +433,7 @@ def standev1(ds,weights):
     return xr.DataArray(data = std1.astype('float32'), dims = ['latitude','longitude'])
 
 
-def standev2(ds,weights,corr_coef_uncer):
+def standev2(ds,ds_in,weights,corr_coef_uncer):
     """
     Calculate propoagated measurement uncertainty.
     
@@ -457,7 +458,9 @@ def standev2(ds,weights,corr_coef_uncer):
     sigma_strat_w = calc_corr_uncorr_uncer(weights, ds['sigma_strat'], corr_coef_uncer['c_strat'])
     sigma_re_w = calc_corr_uncorr_uncer(weights, ds['sigma_re'], corr_coef_uncer['c_strat'])
     std2 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2)
-    return xr.DataArray(data = std2, dims = ['latitude','longitude'])
+    std3 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2+
+                   (0.2*ds_in.tropospheric_NO2_column_number_density_amf.values*ds_in.no2.values)**2)
+    return xr.DataArray(data = std2, dims = ['latitude','longitude']), xr.DataArray(data = std3, dims = ['latitude','longitude'])
 
 
 
@@ -805,6 +808,16 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                                                   ' number density associated with time-averaged propagated'+
                                                                   ' uncertainty of L2 input data , without the profile'+
                                                                   ' uncertainty contribution (sigma_3)',
+                                                    'long_name':'NO2 VCD uncertainty kernel',
+                                                    'units':'molec/cm^2',
+                                                    }
+                                           ),
+        'tropospheric_NO2_column_number_density_uncertainty' : 
+                              xr.DataArray(data = np.expand_dims(ds.std3.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
+                                           attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                  ' number density associated with time-averaged propagated'+
+                                                                  ' uncertainty of L2 input data (sigma_2)',
                                                     'long_name':'NO2 VCD uncertainty',
                                                     'units':'molec/cm^2',
                                                     }
@@ -889,7 +902,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'key_variables':'tropospheric_NO2_column_number_density',   #<---- HCHO has second key variable
                  'gridding_software':'super-observations (Rijdsijk et al., in prep)',  #<--- edit
                  'gridding_selection_cloud_fraction_min':'',
-                 'gridding_selection_cloud_fraction_max':'',
+                 'gridding_selection_cloud_fraction_max':'0.3',
                  'grdding_selection_surface_albedo_max':'',
                  'gridding_selection_sza_max':'',
                  'gridding_selection_minimum_qa':0.75,
@@ -902,7 +915,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'L2_version':'2.3.1',
                  'tracking_id':'', #<----- ???
                  'id':'',
-                 'product_version':'',
+                 'product_version':'1.0',
                  'geospatial_lat_resolution':attrs['geospatial_lat_resolution'],
                  'geospatial_lon_resolution':attrs['geospatial_lon_resolution'],
                  'List_of_L2_files':attrs['files'],
