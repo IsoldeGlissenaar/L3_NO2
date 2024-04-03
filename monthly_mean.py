@@ -71,10 +71,6 @@ def settings():
                                             'out_name' : 'sigma_strat'},
         'no2_superobs_sig_re' :           {'conversion' : 6.02214e19,
                                             'out_name' : 'sigma_re'},
-        'no2_superobs_random_uncertainty' :     {'conversion' : 6.02214e19,
-                                                 'out_name' : 'random'},
-        'no2_superobs_systematic_uncertainty' : {'conversion' : 6.02214e19,
-                                                 'out_name' : 'systematic'},
                         }
                     
     #List of 2d variables to read
@@ -103,16 +99,6 @@ def settings():
                                             'out_name' : 'covered_area_fraction',
                                             'get_mean' : False,
                                             'dimension' : '2d',},
-        # 'trop_col_precis' :               {'conversion' : 6.02214e19,
-        #                                     'out_name' : 'tropospheric_NO2_column_number_density_uncertainty',
-        #                                     'get_mean' : True,
-        #                                     'dimension' : '2d',
-        #                                     'attrs' : {'description' : 'Uncertainty on the NO2 tropospheric vertical column'+
-        #                                                                 ' number density assosciated with time-averaged propagated'+
-        #                                                                 ' uncertainty of L2 input data (sigma_2)',
-        #                                                 'long_name' : 'tropospheric_NO2_column_number_density_uncertainty',
-        #                                                 'units' : 'molec/cm^2'}
-        #                                     },
         'scd' :                           {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_slant_column_number_density',
                                             'get_mean' : True,
