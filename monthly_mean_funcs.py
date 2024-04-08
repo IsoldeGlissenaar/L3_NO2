@@ -458,7 +458,29 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
 
 
 def random_sys(ds,ds_in,weights,corr_coef_uncer):
-    #Todo: docsting    
+    """
+    Calculate random and systematic components of uncertainty. Random component
+    includes the slant column uncertainty, systematic component includes the 
+    stratospheric error and the AMF error.
+    
+    Parameters
+    ----------
+    ds : xr Dataset
+        xarray Dataset with superobservation
+        orbits.
+    weights : array, float32
+        weights used for averaging.
+    corr_coef_uncer : list
+        correlation factor of uncertainty components in temporal uncertainty 
+        propagation.
+    
+    Returns
+    -------
+    random : array, float32
+        random component of uncertainty.
+    systematic : array, float32
+        systematic component of uncertainty.
+    """
     sigma_amf_w = calc_corr_uncorr_uncer(weights, ds['sigma_amf'], corr_coef_uncer['c_amf'])
     sigma_sc_w = calc_corr_uncorr_uncer(weights, ds['sigma_sc'], corr_coef_uncer['c_scd'])
     sigma_strat_w = calc_corr_uncorr_uncer(weights, ds['sigma_strat'], corr_coef_uncer['c_strat'])
