@@ -285,12 +285,14 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_SH['std1'] = standev1(ds_SH,weights[:,:450,:])
         ds_SH = ds_SH.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_SH['std2'], ds_SH['std3'] = standev2(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
+        ds_SH['random'], ds_SH['systematic'] = random_sys(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         
         ds_NH = get_uncertainty_superobs(files,uncertainty_vars,region='NH')
         ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['no2']
         ds_NH['std1'] = standev1(ds_NH,weights[:,450:,:])
         ds_NH = ds_NH.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_NH['std2'], ds_NH['std3'] = standev2(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
+        ds_NH['random'], ds_NH['systematic'] = random_sys(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
         
         ds_uncer = xr.concat([ds_SH,ds_NH], dim="latitude")
     elif split_hems==False:
@@ -299,15 +301,14 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
         ds_uncer['std1'] = standev1(ds_uncer,weights)
         ds_uncer = ds_uncer.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_uncer['std2'], ds_uncer['std3'] = standev2(ds_uncer,ds,weights,corr_coef_uncer)
+        ds_uncer['random'], ds_uncer['systematic'] = random_sys(ds_uncer,ds,weights,corr_coef_uncer)
         
     ds['std1'] = ds_uncer['std1']
     ds['std2'] = ds_uncer['std2']
     ds['std3'] = ds_uncer['std3']
-    ds['random'] = np.sqrt(ds_uncer['sigma_sc']**2)
-    ds['systematic'] = np.sqrt(ds_uncer['sigma_strat']**2+ds_uncer['sigma_amf']**2)
+    ds['random'] = ds_uncer['random']
+    ds['systematic'] = ds_uncer['systematic'] 
     return ds
-
-
 
 
 def get_uncertainty_superobs(files,uncertainty_vars,region='all'):
@@ -455,6 +456,16 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
                    (0.2*ds_in.tropospheric_NO2_column_number_density_amf.values*ds_in.no2.values)**2)
     return xr.DataArray(data = std2, dims = ['latitude','longitude']), xr.DataArray(data = std3, dims = ['latitude','longitude'])
 
+
+def random_sys(ds,ds_in,weights,corr_coef_uncer):
+    #Todo: docsting    
+    sigma_amf_w = calc_corr_uncorr_uncer(weights, ds['sigma_amf'], corr_coef_uncer['c_amf'])
+    sigma_sc_w = calc_corr_uncorr_uncer(weights, ds['sigma_sc'], corr_coef_uncer['c_scd'])
+    sigma_strat_w = calc_corr_uncorr_uncer(weights, ds['sigma_strat'], corr_coef_uncer['c_strat'])
+    
+    random = np.sqrt(sigma_sc_w**2)
+    systematic = np.sqrt(sigma_strat_w**2+sigma_amf_w**2)
+    return xr.DataArray(data = random, dims = ['latitude','longitude']), xr.DataArray(data = systematic, dims = ['latitude','longitude'])
 
 
 def add_vars(ds, calc_vars):

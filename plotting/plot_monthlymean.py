@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from mapplot_func import world_plot
 
-date = "202101"
+date = "201906"
 # f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_{date}.nc"
 
 f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0100.nc"
 ds = xr.open_dataset(f)
 
+# ds.tropospheric_NO2_column_number_density.values[ds.tropospheric_NO2_column_number_density_count.values<0.1] = np.nan
 
 # Superobservation - weighted
 world_plot(

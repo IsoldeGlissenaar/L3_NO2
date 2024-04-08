@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {201908..201912}
+for i in {201901..201912}
 do
     echo $i
     python monthly_mean.py $i
@@ -12,7 +12,7 @@ do
     python monthly_mean.py $i
 done
 
-for i in {202001..202002}
+for i in {202001..202012}
 do
     echo $i
     python monthly_mean.py $i
