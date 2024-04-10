@@ -15,7 +15,7 @@ import xarray as xr
 import os
 from glob import glob
 import datetime
-
+import netCDF4 as nc
 
 def get_list_of_files(date: str, main_sets) -> list:
     """
@@ -115,7 +115,7 @@ def get_mean_all_vars(variables_2d: dict[str, dict[str, str|bool|float]],
     return(ds_out,weights)
 
 
-    
+
 def get_superobs(files: list,
                  var: str,
                  var_dict: dir,
@@ -178,28 +178,64 @@ def get_superobs(files: list,
                                 dims = ['time','latitude','longitude'])
 
     ## Fill dataset with orbits
+    # Old method with xarray, simpler but slower
+    # c1=0
+    # for f in files:
+    #     data = xr.open_dataset(f) 
+    #     if region=='SH':
+    #         data = data.sel(latitude=slice(-90,0))
+    #     elif region=='NH':
+    #         data = data.sel(latitude=slice(0,90))                         
+    #     valid = (data.covered_area_fraction.values<=1.1)     
+    #     if var_dict['dimension']=='2d':
+    #         ds[var_dict['out_name']].values[c1,:,:][valid] = data[var].values[valid]*var_dict['conversion']
+    #         ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
+    #     elif var_dict['dimension']=='3d':
+    #         ds[var_dict['out_name']].values[c1,:,:,:] = data[var].values[:,idx[0]*slice_len:idx[0]*slice_len+slice_len,:]*var_dict['conversion']
+    #         ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
+    #     c1=c1+1
+        
+    ## Fill dataset with orbits
     c1=0
     for f in files:
-        # checking if it is a file
-        if os.path.isfile(f):
-            data = xr.open_dataset(f) 
-            if region=='SH':
-                data = data.sel(latitude=slice(-90,0))
-            elif region=='NH':
-                data = data.sel(latitude=slice(0,90))                         
-            valid = (data.covered_area_fraction.values<=1.1)     
-            if var_dict['dimension']=='2d':
-                ds[var_dict['out_name']].values[c1,:,:][valid] = data[var].values[valid]*var_dict['conversion']
-                ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
-            elif var_dict['dimension']=='3d':
-                ds[var_dict['out_name']].values[c1,:,:,:] = data[var].values[:,idx[0]*slice_len:idx[0]*slice_len+slice_len,:]*var_dict['conversion']
-                ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
-            c1=c1+1
+        file = nc.Dataset(f)
+        valid = (file['/covered_area_fraction'][()]<=1.1)
+        rerel = file['/no2_superobs_re_rel'][()]
+        data = file[f'/{var}'][()]
+        if region=='SH':
+            lat = file['/latitude'][()]
+            idxlat = np.where(lat<=0)[0][-1]+1
+            valid = valid[:idxlat,:]; rerel=rerel[:idxlat,:]
+            data = data[:idxlat,:]
+        if region=='NH':
+            lat = file['/latitude'][()]
+            idxlat = np.where(lat>0)[0][0]
+            valid = valid[idxlat:,:]; rerel=rerel[idxlat:,:]
+            data = data[idxlat:,:]
+        if var_dict['dimension']=='2d':
+            ds[var_dict['out_name']].values[c1,:,:][valid] = data[valid]*var_dict['conversion']
+            ds['re_rel'].values[c1,:,:][valid] = rerel[valid]
+        elif var_dict['dimension']=='3d':
+            ds[var_dict['out_name']].values[c1,:,:,:] = data[:,idx[0]*slice_len:idx[0]*slice_len+slice_len,:]*var_dict['conversion']
+            ds['re_rel'].values[c1,:,:][valid] = rerel[valid]
+        c1=c1+1
+        
+    lat = file['/latitude'][()]
+    lon = file['/longitude'][()]
+    if region=='SH':
+        idxlat = np.where(lat<=0)[0][-1]+1
+        lat = lat[:idxlat]
+    if region=='NH':
+        idxlat = np.where(lat>0)[0][0]
+        lat = lat[idxlat:]
+    
+    file.close()
+
     #Add longitude and latitude
-    ds['latitude'] = xr.DataArray(data = data.latitude,
+    ds['latitude'] = xr.DataArray(data = lat,
                                      dims = ['latitude']
                                      )
-    ds['longitude'] = xr.DataArray(data = data.longitude,
+    ds['longitude'] = xr.DataArray(data = lon,
                                      dims = ['longitude']
                                      )
 
