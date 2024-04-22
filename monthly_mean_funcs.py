@@ -17,6 +17,7 @@ from glob import glob
 import datetime
 import netCDF4 as nc
 
+
 def get_list_of_files(date: str, main_sets) -> list:
     """
     Get list of filenames of superorbits.
@@ -220,6 +221,8 @@ def get_superobs(files: list,
             ds['re_rel'].values[c1,:,:][valid] = rerel[valid]
         c1=c1+1
         
+    
+    #Add longitude and latitude
     lat = file['/latitude'][()]
     lon = file['/longitude'][()]
     if region=='SH':
@@ -231,7 +234,6 @@ def get_superobs(files: list,
     
     file.close()
 
-    #Add longitude and latitude
     ds['latitude'] = xr.DataArray(data = lat,
                                      dims = ['latitude']
                                      )
@@ -318,14 +320,14 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
     if split_hems==True:
         ds_SH = get_uncertainty_superobs(files,uncertainty_vars,region='SH')
         ds_SH['weighted_mean'] = ds.sel(latitude=slice(-90,0))['no2']
-        ds_SH['std1'] = standev1(ds_SH,weights[:,:450,:])
+        ds_SH['std1'], ds_SH['temporal_rep'] = standev1(ds_SH,weights[:,:450,:])
         ds_SH = ds_SH.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_SH['std2'], ds_SH['std3'] = standev2(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         ds_SH['random'], ds_SH['systematic'] = random_sys(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         
         ds_NH = get_uncertainty_superobs(files,uncertainty_vars,region='NH')
         ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['no2']
-        ds_NH['std1'] = standev1(ds_NH,weights[:,450:,:])
+        ds_NH['std1'], ds_NH['temporal_rep'] = standev1(ds_NH,weights[:,450:,:])
         ds_NH = ds_NH.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_NH['std2'], ds_NH['std3'] = standev2(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
         ds_NH['random'], ds_NH['systematic'] = random_sys(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
@@ -334,7 +336,7 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
     elif split_hems==False:
         ds_uncer = get_uncertainty_superobs(files,uncertainty_vars,region='all')
         ds_uncer['weighted_mean'] = ds.no2
-        ds_uncer['std1'] = standev1(ds_uncer,weights)
+        ds_uncer['std1'], ds_uncer['temporal_rep'] = standev1(ds_uncer,weights)
         ds_uncer = ds_uncer.drop_vars(["no2","no_superobs","weighted_mean"])
         ds_uncer['std2'], ds_uncer['std3'] = standev2(ds_uncer,ds,weights,corr_coef_uncer)
         ds_uncer['random'], ds_uncer['systematic'] = random_sys(ds_uncer,ds,weights,corr_coef_uncer)
@@ -344,6 +346,8 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
     ds['std3'] = ds_uncer['std3']
     ds['random'] = ds_uncer['random']
     ds['systematic'] = ds_uncer['systematic'] 
+    ds['std2_total'] = np.sqrt( ds_uncer['std2']**2 + ds_uncer['temporal_rep']**2 )
+    ds['std3_total'] = np.sqrt( ds_uncer['std3']**2 + ds_uncer['temporal_rep']**2 )
     return ds
 
 
@@ -456,11 +460,17 @@ def standev1(ds,weights):
     -------
     std1 : float32
         temporal uncertainty.
+    temporal_rep : xr Dataarray
+        temporal representativity
+        uncertainty. 
     """
+    #Fix obs-1 problem for only 1 observation
+    no_superobs = ds['no_superobs'].values
+    no_superobs[no_superobs==1] = 2
     std1 = np.sqrt(( np.nansum( weights*(ds['no2'].values-ds['weighted_mean'].values)**2,axis=0 ) )/
-                   ( (ds['no_superobs'].values-1)/ds['no_superobs'].values * 
-                    np.nansum(weights,axis=0)) )/np.sqrt(ds['no_superobs'].values)
-    return xr.DataArray(data = std1.astype('float32'), dims = ['latitude','longitude'])
+                   ( (no_superobs-1) * np.nansum(weights,axis=0)) )
+    temporal_rep = std1 / np.sqrt(ds['no_superobs'].values)
+    return xr.DataArray(data = std1.astype('float32'), dims = ['latitude','longitude']), xr.DataArray(data = temporal_rep.astype('float32'), dims = ['latitude','longitude'])
 
 
 def standev2(ds,ds_in,weights,corr_coef_uncer):
@@ -814,6 +824,7 @@ def add_land_water_mask(ds,attrs):
                                           )
     return(ds)
 
+
 def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     """
     Create output dataset.
@@ -868,7 +879,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                            dims = ['time','latitude','longitude'],
                                            attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
                                                                   ' number density associated with time-averaged propagated'+
-                                                                  ' uncertainty of L2 input data , without the profile'+
+                                                                  ' uncertainty of L2 input data, without the profile'+
                                                                   ' uncertainty contribution (sigma_3)',
                                                     'long_name':'NO2 VCD uncertainty kernel',
                                                     'units':'molec/cm^2',
@@ -881,6 +892,27 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                                                   ' number density associated with time-averaged propagated'+
                                                                   ' uncertainty of L2 input data (sigma_2)',
                                                     'long_name':'NO2 VCD uncertainty',
+                                                    'units':'molec/cm^2',
+                                                    }
+                                           ),
+        'tropospheric_NO2_column_number_density_total_uncertainty_kernel' : 
+                              xr.DataArray(data = np.expand_dims(ds.std2_total.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
+                                           attrs = {'description':'Total uncertainty on the NO2 tropospheric vertical column'+
+                                                                  ' number density associated with time-averaged propagated'+
+                                                                  ' uncertainty of L2 input data and temporal representativity, '+
+                                                                  'without the profile uncertainty contribution',
+                                                    'long_name':'NO2 VCD total uncertainty kernel',
+                                                    'units':'molec/cm^2',
+                                                    }
+                                           ),
+        'tropospheric_NO2_column_number_density_total_uncertainty' : 
+                              xr.DataArray(data = np.expand_dims(ds.std3_total.values,axis=0),
+                                           dims = ['time','latitude','longitude'],
+                                           attrs = {'description':'Total uncertainty on the NO2 tropospheric vertical column'+
+                                                                  ' number density associated with time-averaged propagated'+
+                                                                  ' uncertainty of L2 input data and temporal representativity',
+                                                    'long_name':'NO2 VCD total uncertainty',
                                                     'units':'molec/cm^2',
                                                     }
                                            ),

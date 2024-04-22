@@ -196,7 +196,14 @@ def settings():
                                                                     'long_name' : 'NO2 trop SCD',
                                                                     'units' : 'molec/cm^2'}
                                                             },
-        'qa_L3' :                                      {'func' : '~np.isnan(ds.no2.values)',
+        'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
+                                                          'get_mean' : True,
+                                                          'do_func' : False,
+                                                          'dimension' : '2d',
+                                                          'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage (coverage divided by number of days)',
+                                                                     'units' : '1'}
+                                                        },
+        'qa_L3' :                                      {'func' : '(ds.tropospheric_NO2_column_number_density_count>=0.1)&(~np.isnan(ds.no2.values))',
                                                         'out_name' : 'qa_L3',
                                                         'get_mean' : True,
                                                         'do_func' : True,
@@ -205,13 +212,6 @@ def settings():
                                                                     'long_name' : 'data quality assurance value',
                                                                     'units' : '1'}
                                                         }, 
-        'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
-                                                          'get_mean' : True,
-                                                          'do_func' : False,
-                                                          'dimension' : '2d',
-                                                          'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage (coverage divided by number of days)',
-                                                                     'units' : '1'}
-                                                        }
                  }
     
     return date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer
@@ -231,8 +231,8 @@ def main():
     files = get_list_of_files(date,main_sets)
     ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
     ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
-    ds_out = add_vars(ds_out,calc_vars)
     ds_out = add_count(ds_out,files,date)
+    ds_out = add_vars(ds_out,calc_vars)
     ds_out = add_time(ds_out,files,date,weights,split_hems=main_sets['split_hems'])        
     del weights
         

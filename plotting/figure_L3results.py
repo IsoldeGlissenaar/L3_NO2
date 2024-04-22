@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cf
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0100.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0070.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -143,42 +143,55 @@ axs[2, 1].text(0.01, 0.92, "(f)", fontsize=8, transform=axs[2, 1].transAxes)
 #%%
 
 print("January 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0100.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0070.nc"
 ds = xr.open_dataset(f)
 
 print("--")
 ams = ds.tropospheric_NO2_column_number_density.values[0, 711, 924] / 1e15
 print(f"Amsterdam mean: {np.round(ams,2)} 1e15 molecules/cm2")
-ams = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 711, 924] / 1e15
-print(f"Amsterdam std1: {np.round(ams,2)} 1e15 molecules/cm2")
-ams = (
+ams1 = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 711, 924] / 1e15
+print(f"Amsterdam std1: {np.round(ams1,2)} 1e15 molecules/cm2")
+ams2 = (
     ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 711, 924] / 1e15
 )
-print(f"Amsterdam std2: {np.round(ams,2)} 1e15 molecules/cm2")
+print(f"Amsterdam std2: {np.round(ams2,2)} 1e15 molecules/cm2")
+ams3 = (
+    ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values[0, 711, 924] / 1e15
+)
+print(f"Amsterdam total_uncer: {np.round(ams3,2)} 1e15 molecules/cm2")
+perc = ams3/ams*100
+print(f"Amsterdam total_uncer: {np.round(perc,2)}% of total")
 print("--")
 beij = ds.tropospheric_NO2_column_number_density.values[0, 649, 1481] / 1e15
 print(f"Beijing mean: {np.round(beij,2)} 1e15 molecules/cm2")
-beij = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 649, 1481] / 1e15
-print(f"Beijing std1: {np.round(beij,2)} 1e15 molecules/cm2")
-beij = (
+beij1 = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 649, 1481] / 1e15
+print(f"Beijing std1: {np.round(beij1,2)} 1e15 molecules/cm2")
+beij2 = (
     ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 649, 1481]
     / 1e15
 )
-print(f"Beijing std2: {np.round(beij,2)} 1e15 molecules/cm2")
+print(f"Beijing std2: {np.round(beij2,2)} 1e15 molecules/cm2")
+beij3 = (
+    ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values[0, 649, 1481]
+    / 1e15
+)
+print(f"Beijing total_uncer: {np.round(beij3,2)} 1e15 molecules/cm2")
+perc = beij3/beij*100
+print(f"Beijing total_uncer: {np.round(perc,2)}% of total")
 print("--")
 afr = (
     np.nanmax(ds.tropospheric_NO2_column_number_density.values[0, 462:515, 797:1093])
     / 1e15
 )
 print(f"Africa mean: {np.round(afr,2)} 1e15 molecules/cm2")
-afr = (
+afr1 = (
     np.nanmax(
         ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 462:515, 797:1093]
     )
     / 1e15
 )
-print(f"Africa std1: {np.round(afr,2)} 1e15 molecules/cm2")
-afr = (
+print(f"Africa std1: {np.round(afr1,2)} 1e15 molecules/cm2")
+afr2 = (
     np.nanmax(
         ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[
             0, 462:515, 797:1093
@@ -186,48 +199,72 @@ afr = (
     )
     / 1e15
 )
-print(f"Africa std2: {np.round(afr,2)} 1e15 molecules/cm2")
+print(f"Africa std2: {np.round(afr2,2)} 1e15 molecules/cm2")
+afr3 = (
+    np.nanmax(
+        ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values[
+            0, 462:515, 797:1093
+        ]
+    )
+    / 1e15
+)
+print(f"Africa total_uncer: {np.round(afr3,2)} 1e15 molecules/cm2")
+perc = afr3/afr*100
+print(f"Africa total_uncer: {np.round(perc,2)}% of total")
 
 print("---------------")
 
 
 print("June 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0100.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0070.nc"
 ds = xr.open_dataset(f)
 
 print("--")
 ams = ds.tropospheric_NO2_column_number_density.values[0, 711, 924] / 1e15
 print(f"Amsterdam mean: {np.round(ams,2)} 1e15 molecules/cm2")
-ams = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 711, 924] / 1e15
-print(f"Amsterdam std1: {np.round(ams,2)} 1e15 molecules/cm2")
-ams = (
+ams1 = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 711, 924] / 1e15
+print(f"Amsterdam std1: {np.round(ams1,2)} 1e15 molecules/cm2")
+ams2 = (
     ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 711, 924] / 1e15
 )
-print(f"Amsterdam std2: {np.round(ams,2)} 1e15 molecules/cm2")
+print(f"Amsterdam std2: {np.round(ams2,2)} 1e15 molecules/cm2")
+ams3 = (
+    ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values[0, 711, 924] / 1e15
+)
+print(f"Amsterdam total_uncer: {np.round(ams3,2)} 1e15 molecules/cm2")
+perc = ams3/ams*100
+print(f"Amsterdam total_uncer: {np.round(perc,2)}% of total")
 print("--")
 beij = ds.tropospheric_NO2_column_number_density.values[0, 649, 1481] / 1e15
 print(f"Beijing mean: {np.round(beij,2)} 1e15 molecules/cm2")
-beij = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 649, 1481] / 1e15
-print(f"Beijing std1: {np.round(beij,2)} 1e15 molecules/cm2")
-beij = (
+beij1 = ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 649, 1481] / 1e15
+print(f"Beijing std1: {np.round(beij1,2)} 1e15 molecules/cm2")
+beij2 = (
     ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[0, 649, 1481]
     / 1e15
 )
-print(f"Beijing std2: {np.round(beij,2)} 1e15 molecules/cm2")
+print(f"Beijing std2: {np.round(beij2,2)} 1e15 molecules/cm2")
+beij3 = (
+    ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values[0, 649, 1481]
+    / 1e15
+)
+print(f"Beijing total_uncer: {np.round(beij3,2)} 1e15 molecules/cm2")
+perc = beij3/beij*100
+print(f"Beijing total_uncer: {np.round(perc,2)}% of total")
 print("--")
 afr = (
     np.nanmax(ds.tropospheric_NO2_column_number_density.values[0, 384:437, 952:1093])
     / 1e15
 )
 print(f"Africa mean: {np.round(afr,2)} 1e15 molecules/cm2")
-afr = (
+afr1 = (
     np.nanmax(
         ds.tropospheric_NO2_column_number_density_temporal_std.values[0, 384:437, 952:1093]
     )
     / 1e15
 )
-print(f"Africa std1: {np.round(afr,2)} 1e15 molecules/cm2")
-afr = (
+print(f"Africa std1: {np.round(afr1,2)} 1e15 molecules/cm2")
+afr2 = (
     np.nanmax(
         ds.tropospheric_NO2_column_number_density_uncertainty_kernel.values[
             0, 384:437, 952:1093
@@ -235,4 +272,15 @@ afr = (
     )
     / 1e15
 )
-print(f"Africa std2: {np.round(afr,2)} 1e15 molecules/cm2")
+print(f"Africa std2: {np.round(afr2,2)} 1e15 molecules/cm2")
+afr3 = (
+    np.nanmax(
+        ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values[
+            0, 384:437, 952:1093
+        ]
+    )
+    / 1e15
+)
+print(f"Africa total_uncer: {np.round(afr3,2)} 1e15 molecules/cm2")
+perc = afr3/afr*100
+print(f"Africa total_uncer: {np.round(perc,2)}% of total")

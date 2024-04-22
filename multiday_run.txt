@@ -6,19 +6,19 @@
 #    python monthly_mean.py $i
 #done
 
-for i in {201806..201812}
-do
-    echo $i
-    python monthly_mean.py $i
-done
+#for i in {201805..201812}
+#do
+#    echo $i
+#    python monthly_mean.py $i
+#done
 
-for i in {202001..202012}
-do
-    echo $i
-    python monthly_mean.py $i
-done
+#for i in {202001..202012}
+#do
+#    echo $i
+#    python monthly_mean.py $i
+#done
 
-for i in {202101..202112}
+for i in {202105..202112}
 do
     echo $i
     python monthly_mean.py $i
