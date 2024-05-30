@@ -46,7 +46,7 @@ def settings():
     
     date = '201901' 
 
-    main_sets = {'dataset':'02x02_t',
+    main_sets = {'dataset':'02x02',
                  'split_hems':True,
                  'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
                  }
@@ -105,14 +105,6 @@ def settings():
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'NO2 slant column number density',
                                                         'long_name' : 'NO2 SCD',
-                                                        'units' : 'molec/cm^2'}
-                                            },
-        'scd_precis' :                    {'conversion' : 6.02214e19,
-                                            'out_name' : 'NO2_slant_column_number_density_uncertainty',
-                                            'get_mean' : True,
-                                            'dimension' : '2d',
-                                            'attrs' : {'description' : 'NO2 slant column number density uncertainty',
-                                                        'long_name' : 'NO2 SCDE',
                                                         'units' : 'molec/cm^2'}
                                             },
         'amf_trop_superobs' :             {'conversion' : 1,
@@ -188,11 +180,11 @@ def settings():
     #Variables to calculate 2D
     calc_vars = {
         'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
-                                                         'out_name' : 'NO2_slant_column_number_density_troposphere',
-                                                         'get_mean' : True,
-                                                         'do_func' : True,
-                                                         'dimension' : '2d',
-                                                         'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
+                                                          'out_name' : 'NO2_slant_column_number_density_troposphere',
+                                                          'get_mean' : True,
+                                                          'do_func' : True,
+                                                          'dimension' : '2d',
+                                                          'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
                                                                     'long_name' : 'NO2 trop SCD',
                                                                     'units' : 'molec/cm^2'}
                                                             },
@@ -201,7 +193,7 @@ def settings():
                                                           'do_func' : False,
                                                           'dimension' : '2d',
                                                           'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage (coverage divided by number of days)',
-                                                                     'units' : '1'}
+                                                                      'units' : '1'}
                                                         },
         'qa_L3' :                                      {'func' : '(ds.tropospheric_NO2_column_number_density_count>=0.1)&(~np.isnan(ds.no2.values))',
                                                         'out_name' : 'qa_L3',
@@ -212,6 +204,14 @@ def settings():
                                                                     'long_name' : 'data quality assurance value',
                                                                     'units' : '1'}
                                                         }, 
+        'no_observations' :                              {'out_name' : 'no_observations',
+                                                          'get_mean' : True,
+                                                          'do_func' : False,
+                                                          'dimension' : '2d',
+                                                          'attrs' : {'description' : 'Total number of superobservations used to create temporal mean',
+                                                                      'long_name' : 'number of superobservations',
+                                                                      'units' : '1'}
+                                                          }
                  }
     
     return date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer
@@ -239,7 +239,7 @@ def main():
     #Save to file
     attrs = get_attrs(date,ds_out)
     ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0070.nc')
+    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0110.nc')
     del ds_out,ds2
 
 if __name__ == "__main__": 

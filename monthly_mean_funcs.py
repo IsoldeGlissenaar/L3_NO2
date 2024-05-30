@@ -37,7 +37,7 @@ def get_list_of_files(date: str, main_sets) -> list:
     """
     in_folder = f"{main_sets['path_in']}/{main_sets['dataset']}/{date[0:4]}_{date[4:6]}/"
     glob_pattern = os.path.join(in_folder, '*')
-    files = sorted(glob(glob_pattern), key=os.path.getctime)
+    files = sorted(glob(glob_pattern))
     return files
 
 
@@ -177,24 +177,6 @@ def get_superobs(files: list,
     ds['re_rel'] = xr.DataArray(data = np.full((len(files),lat_dim,data.sizes['longitude']),
                                                             np.nan).astype('float32'),
                                 dims = ['time','latitude','longitude'])
-
-    ## Fill dataset with orbits
-    # Old method with xarray, simpler but slower
-    # c1=0
-    # for f in files:
-    #     data = xr.open_dataset(f) 
-    #     if region=='SH':
-    #         data = data.sel(latitude=slice(-90,0))
-    #     elif region=='NH':
-    #         data = data.sel(latitude=slice(0,90))                         
-    #     valid = (data.covered_area_fraction.values<=1.1)     
-    #     if var_dict['dimension']=='2d':
-    #         ds[var_dict['out_name']].values[c1,:,:][valid] = data[var].values[valid]*var_dict['conversion']
-    #         ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
-    #     elif var_dict['dimension']=='3d':
-    #         ds[var_dict['out_name']].values[c1,:,:,:] = data[var].values[:,idx[0]*slice_len:idx[0]*slice_len+slice_len,:]*var_dict['conversion']
-    #         ds['re_rel'].values[c1,:,:][valid] = data['no2_superobs_re_rel'].values[valid]
-    #     c1=c1+1
         
     ## Fill dataset with orbits
     c1=0
@@ -320,32 +302,33 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
     if split_hems==True:
         ds_SH = get_uncertainty_superobs(files,uncertainty_vars,region='SH')
         ds_SH['weighted_mean'] = ds.sel(latitude=slice(-90,0))['no2']
-        ds_SH['std1'], ds_SH['temporal_rep'] = standev1(ds_SH,weights[:,:450,:])
+        ds_SH['std1'], ds_SH['temporal_rep'] = standev1(ds_SH,weights[:,:450,:],files)
         ds_SH = ds_SH.drop_vars(["no2","no_superobs","weighted_mean"])
-        ds_SH['std2'], ds_SH['std3'] = standev2(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
-        ds_SH['random'], ds_SH['systematic'] = random_sys(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
+        ds_SH['std2'], ds_SH['std3'], ds_SH['scd_uncer'] = standev2(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
+        # ds_SH['random'], ds_SH['systematic'] = random_sys(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         
         ds_NH = get_uncertainty_superobs(files,uncertainty_vars,region='NH')
         ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['no2']
-        ds_NH['std1'], ds_NH['temporal_rep'] = standev1(ds_NH,weights[:,450:,:])
+        ds_NH['std1'], ds_NH['temporal_rep'] = standev1(ds_NH,weights[:,450:,:],files)
         ds_NH = ds_NH.drop_vars(["no2","no_superobs","weighted_mean"])
-        ds_NH['std2'], ds_NH['std3'] = standev2(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
-        ds_NH['random'], ds_NH['systematic'] = random_sys(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
+        ds_NH['std2'], ds_NH['std3'], ds_NH['scd_uncer'] = standev2(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
+        # ds_NH['random'], ds_NH['systematic'] = random_sys(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
         
         ds_uncer = xr.concat([ds_SH,ds_NH], dim="latitude")
     elif split_hems==False:
         ds_uncer = get_uncertainty_superobs(files,uncertainty_vars,region='all')
         ds_uncer['weighted_mean'] = ds.no2
-        ds_uncer['std1'], ds_uncer['temporal_rep'] = standev1(ds_uncer,weights)
+        ds_uncer['std1'], ds_uncer['temporal_rep'] = standev1(ds_uncer,weights,files)
         ds_uncer = ds_uncer.drop_vars(["no2","no_superobs","weighted_mean"])
-        ds_uncer['std2'], ds_uncer['std3'] = standev2(ds_uncer,ds,weights,corr_coef_uncer)
-        ds_uncer['random'], ds_uncer['systematic'] = random_sys(ds_uncer,ds,weights,corr_coef_uncer)
+        ds_uncer['std2'], ds_uncer['std3'], ds_uncer['scd_uncer'] = standev2(ds_uncer,ds,weights,corr_coef_uncer)
+        # ds_uncer['random'], ds_uncer['systematic'] = random_sys(ds_uncer,ds,weights,corr_coef_uncer)
         
     ds['std1'] = ds_uncer['std1']
     ds['std2'] = ds_uncer['std2']
     ds['std3'] = ds_uncer['std3']
-    ds['random'] = ds_uncer['random']
-    ds['systematic'] = ds_uncer['systematic'] 
+    ds['scd_uncer'] = ds_uncer['scd_uncer']
+    # ds['random'] = ds_uncer['random']
+    # ds['systematic'] = ds_uncer['systematic'] 
     ds['std2_total'] = np.sqrt( ds_uncer['std2']**2 + ds_uncer['temporal_rep']**2 )
     ds['std3_total'] = np.sqrt( ds_uncer['std3']**2 + ds_uncer['temporal_rep']**2 )
     return ds
@@ -444,7 +427,7 @@ def calc_corr_uncorr_uncer(weights, sigma, c):
     return total
 
 
-def standev1(ds,weights):
+def standev1(ds,weights,files):
     """
     Calculate temporal uncertainty.
     
@@ -455,6 +438,8 @@ def standev1(ds,weights):
         orbits.
     weights : float32
         weights used for averaging.
+    files : list of strings
+        list of filenames.
     
     Returns
     -------
@@ -464,12 +449,42 @@ def standev1(ds,weights):
         temporal representativity
         uncertainty. 
     """
+
+
+    #Get number of days in month
+    month = files[0].split('/')[-2][-2:]
+    if month in ['01','03','05','07','08','10','12']:
+        N = 31.
+    elif month in ['04','06','09','11']:
+        N = 30.
+    elif month=='02':
+        if np.mod(int(month),4)==0:  #If leap year
+            N = 29.
+        else:
+            N = 28.
+           
+    #Get day of observation
+    days = []
+    for f in files:
+        days.append(f.split('/')[-1][6:8])
+    days = np.array(days)
+    
+    #Get number of days with valid observation
+    values = (~np.isnan(ds['no2'].values))
+    n = np.full((ds.sizes['latitude'],ds.sizes['longitude']),0)
+    for i in range(values.shape[1]):
+        for j in range(values.shape[2]):
+            valid_days = days[values[:,i,j]]
+            n[i,j] = len(np.unique(valid_days))
+    
     #Fix obs-1 problem for only 1 observation
     no_superobs = ds['no_superobs'].values
     no_superobs[no_superobs==1] = 2
     std1 = np.sqrt(( np.nansum( weights*(ds['no2'].values-ds['weighted_mean'].values)**2,axis=0 ) )/
                    ( (no_superobs-1) * np.nansum(weights,axis=0)) )
-    temporal_rep = std1 / np.sqrt(ds['no_superobs'].values)
+    
+    temporal_rep = std1/np.sqrt(n) * np.sqrt( (N-n)/(N-1) )
+    # temporal_rep = std1 / np.sqrt(ds['no_superobs'].values)
     return xr.DataArray(data = std1.astype('float32'), dims = ['latitude','longitude']), xr.DataArray(data = temporal_rep.astype('float32'), dims = ['latitude','longitude'])
 
 
@@ -499,8 +514,11 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
     sigma_re_w = calc_corr_uncorr_uncer(weights, ds['sigma_re'], corr_coef_uncer['c_strat'])
     std2 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2)
     std3 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2+
-                   (0.2*ds_in.tropospheric_NO2_column_number_density_amf.values*ds_in.no2.values)**2)
-    return xr.DataArray(data = std2, dims = ['latitude','longitude']), xr.DataArray(data = std3, dims = ['latitude','longitude'])
+                   (0.1*ds_in.no2.values)**2)
+    return (xr.DataArray(data = std2, dims = ['latitude','longitude']), 
+            xr.DataArray(data = std3, dims = ['latitude','longitude']),
+            xr.DataArray(data = sigma_sc_w, dims=["latitude","longitude"])
+            )
 
 
 def random_sys(ds,ds_in,weights,corr_coef_uncer):
@@ -583,10 +601,14 @@ def add_count(ds,files,date):
         Same as input ds but now with added calculated variables.
     """
     cover = np.full((len(files),ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
+    no2 = np.full((len(files),ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
     for i,file in enumerate(files):
         data = xr.open_dataset(file)
         cover[i,:,:] = data.covered_area_fraction.values
+        no2[i,:,:] = data.no2_superobs.values
     cover[cover>1e36] = np.nan
+    no2[no2>1e36] = np.nan
+    
 
     #Get number of days in month
     if date[4:6] in ['01','03','05','07','08','10','12']:
@@ -598,6 +620,10 @@ def add_count(ds,files,date):
             len_m = 29.
         else:
             len_m = 28.
+           
+    ds['no_observations'] = xr.DataArray(data=np.sum((~np.isnan(no2)),axis=0).astype('int'),
+                                     dims = ['latitude','longitude']
+                                     )
 
     ds['tropospheric_NO2_column_number_density_count'] = xr.DataArray(data=np.nansum(cover,axis=0)/len_m,
                                                                       dims = ['latitude','longitude']
@@ -812,6 +838,8 @@ def add_land_water_mask(ds,attrs):
         f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_02x02.nc'
     elif resolution == 1.:
         f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_1x1.nc'
+    elif resolution == 2.:
+        f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_20x25.nc'
     else:
         print(f"resolution: {resolution}")
         print('WARNING: No land_water_mask file available for this resolution')
@@ -874,22 +902,22 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                                     'units':'molec/cm^2',
                                                     }
                               ),
-        'tropospheric_NO2_column_number_density_uncertainty_kernel' : 
+        'tropospheric_NO2_column_number_density_measurement_uncertainty_kernel' : 
                               xr.DataArray(data = np.expand_dims(ds.std2.values,axis=0),
                                            dims = ['time','latitude','longitude'],
                                            attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with time-averaged propagated'+
+                                                                  ' number density associated with area-averaged propagated'+
                                                                   ' uncertainty of L2 input data, without the profile'+
                                                                   ' uncertainty contribution (sigma_3)',
                                                     'long_name':'NO2 VCD uncertainty kernel',
                                                     'units':'molec/cm^2',
                                                     }
                                            ),
-        'tropospheric_NO2_column_number_density_uncertainty' : 
+        'tropospheric_NO2_column_number_density_measurement_uncertainty' : 
                               xr.DataArray(data = np.expand_dims(ds.std3.values,axis=0),
                                            dims = ['time','latitude','longitude'],
                                            attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with time-averaged propagated'+
+                                                                  ' number density associated with area-averaged propagated'+
                                                                   ' uncertainty of L2 input data (sigma_2)',
                                                     'long_name':'NO2 VCD uncertainty',
                                                     'units':'molec/cm^2',
@@ -916,24 +944,32 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                                     'units':'molec/cm^2',
                                                     }
                                            ),
-        'tropospheric_NO2_column_number_density_uncertainty_random' : 
-                              xr.DataArray(data = np.expand_dims(ds.random.values,axis=0),
+        'NO2_slant_column_number_density_uncertainty' : 
+                              xr.DataArray(data = np.expand_dims(ds.scd_uncer.values,axis=0),
                                            dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Random uncertainty on the NO2 tropospheric '+
-                                                    'vertical column number density (slant column density)',
-                                                    'long_name':'NO2 VCD random uncertainty',
-                                                    'units':'molec/cm^2',
-                                                    }       
-                                           ),
-        'tropospheric_NO2_column_number_density_uncertainty_systematic' : 
-                              xr.DataArray(data = np.expand_dims(ds.systematic.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Systematic uncertainty on the NO2 tropospheric '+
-                                                    'vertical column number density (AMF and stratospheric column)',
-                                                    'long_name':'NO2 VCD systematic uncertainty',
+                                           attrs = {'description':'NO2 slant column number density uncertainty',
+                                                    'long_name':'NO2 SCDE',
                                                     'units':'molec/cm^2',
                                                     }
-                              ),                             
+                                           ),    
+        # 'tropospheric_NO2_column_number_density_uncertainty_random' : 
+        #                       xr.DataArray(data = np.expand_dims(ds.random.values,axis=0),
+        #                                    dims = ['time','latitude','longitude'],
+        #                                    attrs = {'description':'Random uncertainty on the NO2 tropospheric '+
+        #                                             'vertical column number density (slant column density)',
+        #                                             'long_name':'NO2 VCD random uncertainty',
+        #                                             'units':'molec/cm^2',
+        #                                             }       
+        #                                    ),
+        # 'tropospheric_NO2_column_number_density_uncertainty_systematic' : 
+        #                       xr.DataArray(data = np.expand_dims(ds.systematic.values,axis=0),
+        #                                    dims = ['time','latitude','longitude'],
+        #                                    attrs = {'description':'Systematic uncertainty on the NO2 tropospheric '+
+        #                                             'vertical column number density (AMF and stratospheric column)',
+        #                                             'long_name':'NO2 VCD systematic uncertainty',
+        #                                             'units':'molec/cm^2',
+        #                                             }
+        #                       ),                             
 
         #
         'time' : xr.DataArray(data = np.array([np.datetime64(f"{attrs['files'][0][20:24]}-{attrs['files'][0][24:26]}-{attrs['files'][0][26:28]} 00:00:00.000000000")]),
@@ -966,6 +1002,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
         attrs = {'Conventions':' ',  #<----- CF-1.8 HARP-1.0 in HCHO product
                  'title':'NetCDF CF file providing L3 total nitrogendioxide satellite observations',
                  'institution':'KNMI',
+                 'doi':'https://doi.org/10.21944/cci-no2-tropomi-l3',
                  'source':' ',
                  'project':'CCI+ ecv',
                  'summary':'TROPOMI L3 tropospheric nitrogendioxide columns for one individual sensor generated as'+
@@ -994,7 +1031,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'platform':'S5P',
                  'sensor':'TROPOMI',
                  'key_variables':'tropospheric_NO2_column_number_density',   #<---- HCHO has second key variable
-                 'gridding_software':'super-observations (Rijdsijk et al., in prep)',  #<--- edit
+                 'gridding_software':'super-observations (Rijdsijk et al., in review)',  #<--- edit
                  'gridding_selection_cloud_fraction_min':'',
                  'gridding_selection_cloud_fraction_max':'0.3',
                  'gridding_selection_surface_albedo_max':'',
@@ -1010,7 +1047,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'L2_version':'2.3.1',
                  'tracking_id':'', #<----- ???
                  'id':'',
-                 'product_version':'1.0',
+                 'product_version':'1.1',
                  'geospatial_lat_resolution':attrs['geospatial_lat_resolution'],
                  'geospatial_lon_resolution':attrs['geospatial_lon_resolution'],
                  'List_of_L2_files':attrs['files'],
@@ -1059,14 +1096,21 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                           attrs = {'long_name' : 'grid latitude bounds',
                                                    'units' : 'degree north'}
                                           )
-    #TODO This is different for geos-chem!
-    # lon_bnds_1 = [178.75,-178.75]
+    # #Regular grid
     lon_bnds_1 = [-180]
     for i in range(len(ds2.longitude.values)-1):
         lon_bnds_1.append(np.round(ds2.longitude.values[i]*2-lon_bnds_1[i],2))
     lon_bnds_2 = lon_bnds_1[1:]
-    # lon_bnds_2.append(178.75)
     lon_bnds_2.append(180)
+    
+    # Res-geoschem (2x2.5)
+    # lon_bnds_1 = [178.75,-178.75]
+    # for i in range(1,len(ds2.longitude.values)-1):
+    #     lon_bnds_1.append(np.round(ds2.longitude.values[i]*2-lon_bnds_1[i],2))
+    # lon_bnds_2 = lon_bnds_1[1:]
+    # lon_bnds_2.append(178.75)
+    
+    
     ds2['longitude_bounds'] = xr.DataArray(data = np.array([lon_bnds_1,lon_bnds_2]).transpose(),
                                           dims = ['longitude','independent_2'],
                                           attrs = {'long_name' : 'grid longitude bounds',
@@ -1080,12 +1124,12 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                             'standard_name':'effective date'
                                            }
                                     )
-    ds2['effective_fractional_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
-                                                   dims = ['time','latitude','longitude'],
-                                                   attrs = {'description':'effective fractional day in local solar time. '+
-                                                                          'UTC = local_solar_time - longitude/180',
-                                                            'standard_name':'effective fractional day'
-                                                              }
+    ds2['eff_frac_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
+                                       dims = ['time','latitude','longitude'],
+                                       attrs = {'description':'effective fractional day in local solar time. '+
+                                                                'UTC = local_solar_time - longitude/180',
+                                                'standard_name':'effective fractional day'
+                                                }
                                          )
         
     return ds2

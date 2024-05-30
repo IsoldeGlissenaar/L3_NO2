@@ -16,10 +16,10 @@ from mapplot_func import world_plot
 date = "201901"
 # f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_{date}.nc"
 
-f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0070.nc"
+f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0110.nc"
 ds = xr.open_dataset(f)
 
-# ds.tropospheric_NO2_column_number_density.values[ds.tropospheric_NO2_column_number_density_count.values<0.1] = np.nan
+# ds.tropospheric_NO2_column_number_density.values[ds.qa_L3==0] = np.nan
 
 # Superobservation - weighted
 world_plot(
@@ -46,7 +46,7 @@ world_plot(
 
 # STD2
 world_plot(
-    (ds.tropospheric_NO2_column_number_density_uncertainty_kernel / 1e15)[0, :, :],
+    (ds.tropospheric_NO2_column_number_density_measurement_uncertainty / 1e15)[0, :, :],
     ds.longitude,
     ds.latitude,
     vmin=0,
@@ -59,7 +59,7 @@ world_plot(
 
 # total uncertainty
 world_plot(
-    (ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel / 1e15)[0, :, :],
+    (ds.tropospheric_NO2_column_number_density_total_uncertainty / 1e15)[0, :, :],
     ds.longitude,
     ds.latitude,
     vmin=0,
@@ -71,7 +71,7 @@ world_plot(
 )
 
 #Temporal representativity uncertainty
-temp_rep = np.sqrt(ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel**2 - ds.tropospheric_NO2_column_number_density_uncertainty_kernel**2)
+temp_rep = np.sqrt(ds.tropospheric_NO2_column_number_density_total_uncertainty**2 - ds.tropospheric_NO2_column_number_density_measurement_uncertainty**2)
 world_plot(
     temp_rep[0,:,:] / 1e15,
     ds.longitude,
@@ -89,8 +89,8 @@ world_plot(
 world_plot(
     (
         (
-            ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel
-            - ds.tropospheric_NO2_column_number_density_uncertainty_kernel
+            ds.tropospheric_NO2_column_number_density_total_uncertainty
+            - ds.tropospheric_NO2_column_number_density_measurement_uncertainty
         )
         / 1e15
     )[0, :, :],
@@ -110,7 +110,7 @@ world_plot(
     (
         (
             ds.tropospheric_NO2_column_number_density_temporal_std
-            - ds.tropospheric_NO2_column_number_density_uncertainty_kernel
+            - ds.tropospheric_NO2_column_number_density_measurement_uncertainty
         )
         / 1e15
     )[0, :, :],
@@ -144,7 +144,7 @@ world_plot(
 
 # Relative uncertainty - STD2
 world_plot(
-    (ds.tropospheric_NO2_column_number_density_uncertainty_kernel 
+    (ds.tropospheric_NO2_column_number_density_measurement_uncertainty 
      / ds.tropospheric_NO2_column_number_density)[0, :, :] * 100,
     ds.longitude,
     ds.latitude,
@@ -158,7 +158,7 @@ world_plot(
 
 # Relative uncertainty - total
 world_plot(
-    (ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel 
+    (ds.tropospheric_NO2_column_number_density_total_uncertainty 
      / ds.tropospheric_NO2_column_number_density)[0, :, :] * 100,
     ds.longitude,
     ds.latitude,
@@ -172,8 +172,8 @@ world_plot(
 
 
 # Relative uncertainty - total increase
-plot_data = ((ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel 
-              / ds.tropospheric_NO2_column_number_density)[0, :, :] * 100) - ((ds.tropospheric_NO2_column_number_density_uncertainty_kernel    
+plot_data = ((ds.tropospheric_NO2_column_number_density_total_uncertainty 
+              / ds.tropospheric_NO2_column_number_density)[0, :, :] * 100) - ((ds.tropospheric_NO2_column_number_density_measurement_uncertainty    
             / ds.tropospheric_NO2_column_number_density)[0, :, :] * 100)
 
 plot_data.values[ds.tropospheric_NO2_column_number_density.values[0,:,:]<=0] = np.nan                                                                              
@@ -204,9 +204,9 @@ lim_low = 1 #e15 molec/cm2
 def gcos(lim_high, lim_low):
     gcos_req_g = np.zeros(ds.tropospheric_NO2_column_number_density.values.shape)
     low = (ds.tropospheric_NO2_column_number_density.values/1e15 < 4)
-    gcos_req_g[~low] = (2 * ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values < 
+    gcos_req_g[~low] = (2 * ds.tropospheric_NO2_column_number_density_total_uncertainty.values < 
                 ds.tropospheric_NO2_column_number_density.values * lim_high)[~low]
-    gcos_req_g[low] = (2 * ds.tropospheric_NO2_column_number_density_total_uncertainty_kernel.values/1e15 < 
+    gcos_req_g[low] = (2 * ds.tropospheric_NO2_column_number_density_total_uncertainty.values/1e15 < 
                      lim_low)[low]
     return gcos_req_g
 
@@ -232,7 +232,7 @@ fig = plt.figure(dpi=400)
 ax = plt.axes(projection=ccrs.PlateCarree())
 ax.coastlines(resolution="50m", linewidth=0.3)
 # ax.set_extent([-180, 180, -90, 90], crs=ccrs.PlateCarree())
-ax.set_extent([-15, 40, 30, 70], crs=ccrs.PlateCarree())
+# ax.set_extent([-15, 40, 30, 70], crs=ccrs.PlateCarree())
 # ax.set_extent([100, 142, 17, 49], crs=ccrs.PlateCarree())
 plt.pcolormesh(
     ds.longitude, ds.latitude, gcos_req[0,:,:], cmap=cmap, norm=norm,transform=ccrs.PlateCarree()
