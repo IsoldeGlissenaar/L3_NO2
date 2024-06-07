@@ -13,7 +13,7 @@ import cartopy.feature as cf
 import matplotlib as mpl
 mpl.rcParams['hatch.linewidth'] = 0.2
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0070.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0120.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -43,7 +43,7 @@ im = axs[0, 0].pcolormesh(
     cmap="Spectral_r",
     transform=ccrs.PlateCarree(),
 )
-# axs[0, 0].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
+axs[0, 0].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
 axs[0, 0].text(0.01, 0.92, "(a)", fontsize=8, transform=axs[0, 0].transAxes)
 
 # STD1
@@ -57,12 +57,12 @@ im = axs[1, 0].pcolormesh(
     cmap="YlOrRd",
     transform=ccrs.PlateCarree(),
 )
-# axs[1, 0].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
+axs[1, 0].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
 axs[1, 0].text(0.01, 0.92, "(b)", fontsize=8, transform=axs[1, 0].transAxes)
 
 
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0070.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0120.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -81,7 +81,7 @@ im = axs[0, 1].pcolormesh(
     cmap="Spectral_r",
     transform=ccrs.PlateCarree(),
 )
-# axs[0, 1].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
+axs[0, 1].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
 cbar = plt.colorbar(im, ax=axs[0, 1], extend="both")
 cbar.ax.tick_params(labelsize=6)
 cbar.set_label("10$^{15}$ molecules/cm$^2$", size=6)
@@ -98,7 +98,7 @@ im = axs[1, 1].pcolormesh(
     cmap="YlOrRd",
     transform=ccrs.PlateCarree(),
 )
-# axs[1, 1].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
+axs[1, 1].pcolor(ds.longitude,ds.latitude,data_m,hatch='xxxxxxxx', alpha=0, transform=ccrs.PlateCarree())
 cbar = plt.colorbar(im, ax=axs[1, 1], extend="max")
 cbar.ax.tick_params(labelsize=6)
 cbar.set_label("10$^{15}$ molecules/cm$^2$", size=6)
@@ -111,7 +111,7 @@ axs[1, 1].text(0.01, 0.92, "(d)", fontsize=8, transform=axs[1, 1].transAxes)
 #%%
 
 print("January 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0070.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0120.nc"
 ds = xr.open_dataset(f)
 
 print("--")
@@ -184,7 +184,7 @@ print("---------------")
 
 
 print("June 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02_t/CCI+p-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0070.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0120.nc"
 ds = xr.open_dataset(f)
 
 print("--")

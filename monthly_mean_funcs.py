@@ -98,10 +98,10 @@ def get_mean_all_vars(variables_2d: dict[str, dict[str, str|bool|float]],
             #3D arrays are to big to load in RAM so need to be split up
             #in slices.
             data = xr.open_dataset(files[-1])
-            ds_out[var_dict['out_name']] = xr.DataArray(data = np.full((data.sizes['layer'],
+            ds_out[var_dict['out_name']] = xr.DataArray(data = np.full((data.sizes['vertical'],
                                                                     data.sizes['latitude'],data.sizes['longitude']),
                                                                     np.nan).astype('float32'),
-                                                        dims = ['layer','latitude','longitude'])
+                                                        dims = ['vertical','latitude','longitude'])
             slice_len = int(25)
             while np.mod(data.sizes['latitude'],slice_len)!=0:
                 #While this is the case latitude cannot be split up
@@ -169,10 +169,10 @@ def get_superobs(files: list,
                                                             np.nan).astype('float32'),
                                                 dims = ['time','latitude','longitude'])
     elif var_dict['dimension']=='3d':
-        layer_dim = int(data.sizes['layer'])
+        layer_dim = int(data.sizes['vertical'])
         ds[var_dict['out_name']] = xr.DataArray(data = np.full((len(files),layer_dim,slice_len,data.sizes['longitude']),
                                                             np.nan).astype('float32'),
-                                                dims = ['time','layer','latitude2','longitude'])
+                                                dims = ['time','vertical','latitude2','longitude'])
         
     ds['re_rel'] = xr.DataArray(data = np.full((len(files),lat_dim,data.sizes['longitude']),
                                                             np.nan).astype('float32'),
@@ -621,7 +621,7 @@ def add_count(ds,files,date):
         else:
             len_m = 28.
            
-    ds['no_observations'] = xr.DataArray(data=np.sum((~np.isnan(no2)),axis=0).astype('int'),
+    ds['no_observations'] = xr.DataArray(data=np.sum((~np.isnan(no2)),axis=0).astype('int32'),
                                      dims = ['latitude','longitude']
                                      )
 
@@ -732,7 +732,7 @@ def add_time(ds,files,date,weights,split_hems=False):
     return ds
 
 
-def get_attrs(date,ds_out):
+def get_attrs(date,ds_out,main_sets):
     """
     Get attributes needed for output dataset
 
@@ -762,7 +762,6 @@ def get_attrs(date,ds_out):
     #Get list of superobservation orbit files
     files = []
     for date in dates:
-        # in_folder = '/nobackup/users/glissena/data/TROPOMI/L2/orbits/'+date[0:4]+'_'+date[4:6]+'/'+date
         in_folder = f'/net/pc200252/nobackup_1/users/gomenrt/no2_tropomi/PAL_reduced/{date[:6]}/'
         files.extend(sorted(os.listdir(in_folder)))
 
@@ -772,13 +771,22 @@ def get_attrs(date,ds_out):
     datetime_stop = datetime.datetime.strptime(files[-1][36:51],'%Y%m%dT%H%M%S') - datetime.datetime(1995,1,1)
     datetime_stop = datetime_stop.days + datetime_stop.seconds/60/60/24
     date_created = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")+'Z'
+    
+    if int(date)>202106:
+        L1_version = '2.0'
+    else:
+        L1_version = '1.0'
+    
     attrs = {'files': files,
              'datetime_start': datetime_start,
              'datetime_stop': datetime_stop,
              'time_coverage_list': time_coverage_list,
              'date_created': date_created,
              'geospatial_lat_resolution': geospatial_lat_res,
-             'geospatial_lon_resolution': geospatial_lon_res}
+             'geospatial_lon_resolution': geospatial_lon_res,
+             'L1_version': L1_version,
+             'L3_out_version': main_sets['L3_out_version']
+             }
     return attrs
 
 
@@ -806,7 +814,7 @@ def add_nontime_vars(ds,files,var,var_dict):
     f = os.path.join(files[-1])
     data = xr.open_dataset(f)       
     ds[var_dict['out_name']] = xr.DataArray(data = data[var].values*var_dict['conversion'],
-                                            dims = ['layer','independent_2'],
+                                            dims = ['vertical','independent_2'],
                                             attrs = var_dict['attrs']
                                             )
     return ds
@@ -844,7 +852,7 @@ def add_land_water_mask(ds,attrs):
         print(f"resolution: {resolution}")
         print('WARNING: No land_water_mask file available for this resolution')
     lc = xr.open_dataset(f)
-    ds['land_water_mask'] = xr.DataArray(data = lc.land_water_mask.values,
+    ds['land_water_mask'] = xr.DataArray(data = lc.land_water_mask.values.astype('int32'),
                                           dims = ['time','latitude','longitude'],
                                           attrs = {'description' : '0:water, 1:land, 2:land water transition',
                                                    'long_name' : 'land sea mask',
@@ -853,7 +861,7 @@ def add_land_water_mask(ds,attrs):
     return(ds)
 
 
-def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
+def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_filename):
     """
     Create output dataset.
     
@@ -992,14 +1000,14 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                             'bounds':'longitude_bounds'
                                             }
                                    ),
-        'layer' : xr.DataArray(data = np.arange(1,35,1).astype(int),
-                                dims = ['layer'],
+        'vertical' : xr.DataArray(data = np.arange(1,35,1).astype('int32'),
+                                dims = ['vertical'],
                                 attrs = {'units':'1',
-                                         'long_name':'layer dimension index'
+                                         'long_name':'vertical dimension index'
                                          }
                                    ),
                                     },
-        attrs = {'Conventions':' ',  #<----- CF-1.8 HARP-1.0 in HCHO product
+        attrs = {'Conventions':'CF-1.8 HARP-1.0',  
                  'title':'NetCDF CF file providing L3 total nitrogendioxide satellite observations',
                  'institution':'KNMI',
                  'doi':'https://doi.org/10.21944/cci-no2-tropomi-l3',
@@ -1009,7 +1017,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                            'part of the CCI + percursors',
                  'license':'',
                  'references':'',
-                 'naming_authority':'KNMI',  #<--- or BIRA-IASB?
+                 'naming_authority':'KNMI',  
                  'keywords':'nitrogendioxide, total column, TROPOMI, level-3, satellite',
                  'keywords_vocabulary':'',
                  'cdm_data_type':'Grid',
@@ -1030,12 +1038,9 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'sensor_list':'TROPOMI/Sentinel 5 precursor',
                  'platform':'S5P',
                  'sensor':'TROPOMI',
-                 'key_variables':'tropospheric_NO2_column_number_density',   #<---- HCHO has second key variable
-                 'gridding_software':'super-observations (Rijdsijk et al., in review)',  #<--- edit
-                 'gridding_selection_cloud_fraction_min':'',
+                 'key_variables':'tropospheric_NO2_column_number_density',   
+                 'gridding_software':'super-observations (Rijdsijk et al., 2024)',  
                  'gridding_selection_cloud_fraction_max':'0.3',
-                 'gridding_selection_surface_albedo_max':'',
-                 'gridding_selection_sza_max':'',
                  'gridding_selection_minimum_qa':0.75,
                  'gridding_selection_other_filters':'no descending node',
                  'temporal_uncertainty_correlation_scd':corr_coef_uncer['c_scd'],
@@ -1043,11 +1048,11 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                  'temporal_uncertainty_correlation_amf':corr_coef_uncer['c_amf'],
                  'temporal_uncertainty_correlation_re':corr_coef_uncer['c_re'],
                  'comment':'',
-                 'L1_version':'1.0',
+                 'L1_version':attrs['L1_version'],
                  'L2_version':'2.3.1',
-                 'tracking_id':'', #<----- ???
-                 'id':'',
-                 'product_version':'1.1',
+                 'tracking_id':'https://doi.org/10.21944/cci-no2-tropomi-l3',
+                 'id':out_filename,
+                 'product_version':attrs['L3_out_version'],
                  'geospatial_lat_resolution':attrs['geospatial_lat_resolution'],
                  'geospatial_lon_resolution':attrs['geospatial_lon_resolution'],
                  'List_of_L2_files':attrs['files'],
@@ -1072,8 +1077,10 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
                                                             attrs = var_dict['attrs']
                                                             )
                 elif var_dict['dimension']=='3d':
-                    ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
-                                                            dims = ['time','layer','latitude','longitude'],
+                    ds2[var_dict['out_name']] = xr.DataArray(data = np.transpose(np.expand_dims(
+                                                                                    ds[var_dict['out_name']].values,axis=0),
+                                                                                 [0,2,3,1]),
+                                                            dims = ['time','latitude','longitude','vertical'],
                                                             attrs = var_dict['attrs']
                                                             )
                     
@@ -1094,7 +1101,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     ds2['latitude_bounds'] = xr.DataArray(data = np.array([lat_bnds_1,lat_bnds_2]).transpose(),
                                           dims = ['latitude','independent_2'],
                                           attrs = {'long_name' : 'grid latitude bounds',
-                                                   'units' : 'degree north'}
+                                                   'units' : 'degree_north'}
                                           )
     # #Regular grid
     lon_bnds_1 = [-180]
@@ -1114,7 +1121,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files):
     ds2['longitude_bounds'] = xr.DataArray(data = np.array([lon_bnds_1,lon_bnds_2]).transpose(),
                                           dims = ['longitude','independent_2'],
                                           attrs = {'long_name' : 'grid longitude bounds',
-                                                   'units' : 'degree east'}
+                                                   'units' : 'degree_east'}
                                           )
     
     #Effective time

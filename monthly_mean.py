@@ -49,6 +49,7 @@ def settings():
     main_sets = {'dataset':'02x02',
                  'split_hems':True,
                  'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
+                 'L3_out_version':'0120',
                  }
         
     #Correlation coefficients for uncertainty calculation
@@ -237,9 +238,11 @@ def main():
     del weights
         
     #Save to file
-    attrs = get_attrs(date,ds_out)
-    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,corr_coef_uncer,files)
-    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0110.nc')
+    out_filename = f'ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-{date}{files[0][-20:-18]}_{date}{files[-1][-20:-18]}-fv{main_sets["L3_out_version"]}.nc'
+    attrs = get_attrs(date,ds_out,main_sets)
+    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,
+                         corr_coef_uncer,files,out_filename)
+    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/{out_filename}')
     del ds_out,ds2
 
 if __name__ == "__main__": 
