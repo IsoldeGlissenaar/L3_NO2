@@ -13,7 +13,7 @@ import cartopy.feature as cf
 import matplotlib as mpl
 mpl.rcParams['hatch.linewidth'] = 0.2
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0120.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/v1_2/ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-20190101_20190131-fv0120.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -62,7 +62,7 @@ axs[1, 0].text(0.01, 0.92, "(b)", fontsize=8, transform=axs[1, 0].transAxes)
 
 
 
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0120.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/v1_2/ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-20190601_20190630-fv0120.nc"
 ds = xr.open_dataset(f)
 dates = [f[76:84], f[85:93]]
 
@@ -111,7 +111,7 @@ axs[1, 1].text(0.01, 0.92, "(d)", fontsize=8, transform=axs[1, 1].transAxes)
 #%%
 
 print("January 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201901-fv0120.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/v1_2/ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-20190101_20190131-fv0120.nc"
 ds = xr.open_dataset(f)
 
 print("--")
@@ -184,7 +184,7 @@ print("---------------")
 
 
 print("June 2019")
-f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-201906-fv0120.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/v1_2/ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-20190601_20190630-fv0120.nc"
 ds = xr.open_dataset(f)
 
 print("--")

@@ -16,7 +16,7 @@ from mapplot_func import world_plot
 date = "201901"
 # f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/NO2_TROPOMI_{date}.nc"
 
-f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0110.nc"
+f = "/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/v1_2/ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-20190101_20190131-fv0120.nc"
 ds = xr.open_dataset(f)
 
 # ds.tropospheric_NO2_column_number_density.values[ds.qa_L3==0] = np.nan

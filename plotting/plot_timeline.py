@@ -16,11 +16,11 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 
 #
-location = 'Amsterdam'
-min_lat = 52.1
-max_lat = 52.3
-min_lon = 4.7
-max_lon = 4.9
+location ='Bologna'
+min_lat = 44.3
+max_lat =44.8
+min_lon = 11.1
+max_lon = 11.6
 
 
 #Load TROPOMI monthly means
@@ -69,7 +69,7 @@ regr = scipy.stats.linregress(x,y)
 trop_mean = np.nanmean(data_trop[:,trop_lat_min:trop_lat_max,trop_lon_min:trop_lon_max],axis=(1,2))/1e15
 trop_uncer = np.nanmean(trop_uncer[:,trop_lat_min:trop_lat_max,trop_lon_min:trop_lon_max],axis=(1,2))/1e15
 
-fig,ax = plt.subplots(dpi=300,figsize=(8,4))
+fig,ax = plt.subplots(dpi=500,figsize=(10,3))
 tick_idx = np.arange(2018,2023,1) 
 ax.plot(dates_float,
           trop_mean,c='C1',linewidth=1,label="TROPOMI")
@@ -80,13 +80,16 @@ ax.fill_between(dates_float,
                 alpha=0.3
                 )
 ax.set_xticks(tick_idx)
-ax.set_xticklabels(np.arange(2018,2023,1).astype(str),rotation=70)
-ax.tick_params(axis='both', which='major', labelsize=8)
+ax.set_xticklabels(np.arange(2018,2023,1).astype(str))
+ax.tick_params(axis='both', which='major', labelsize=10)
+# ax.xaxis.set_minor_locator(MultipleLocator(1/12))
 ax.set_ylim(ymin=0)
-ax.set_ylabel("Mean tropospheric column\n[10$^{15}$ molecules/cm$^2$]",fontsize=9)
+ax.set_ylabel("Mean tropospheric column\n[10$^{15}$ molecules/cm$^2$]",fontsize=12)
+ax.yaxis.set_label_position("right")
+ax.yaxis.tick_right()
 ax.grid(linestyle=':',linewidth=0.5) 
-ax.set_xlim([2018.0,2022.4])
-plt.title(f"TROPOMI NO$_2$ Tropospheric VCD - {location}")
+ax.set_xlim([2018.2,2022.2])
+plt.title(f"{location} - TROPOMI NO$_2$ Tropospheric VCD")
 
 
 #Plot map Tropomi

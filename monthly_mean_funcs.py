@@ -98,7 +98,7 @@ def get_mean_all_vars(variables_2d: dict[str, dict[str, str|bool|float]],
             #3D arrays are to big to load in RAM so need to be split up
             #in slices.
             data = xr.open_dataset(files[-1])
-            ds_out[var_dict['out_name']] = xr.DataArray(data = np.full((data.sizes['vertical'],
+            ds_out[var_dict['out_name']] = xr.DataArray(data = np.full((data.sizes['layer'],
                                                                     data.sizes['latitude'],data.sizes['longitude']),
                                                                     np.nan).astype('float32'),
                                                         dims = ['vertical','latitude','longitude'])
@@ -169,7 +169,7 @@ def get_superobs(files: list,
                                                             np.nan).astype('float32'),
                                                 dims = ['time','latitude','longitude'])
     elif var_dict['dimension']=='3d':
-        layer_dim = int(data.sizes['vertical'])
+        layer_dim = int(data.sizes['layer'])
         ds[var_dict['out_name']] = xr.DataArray(data = np.full((len(files),layer_dim,slice_len,data.sizes['longitude']),
                                                             np.nan).astype('float32'),
                                                 dims = ['time','vertical','latitude2','longitude'])
@@ -511,7 +511,7 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
     sigma_amf_w = calc_corr_uncorr_uncer(weights, ds['sigma_amf'], corr_coef_uncer['c_amf'])
     sigma_sc_w = calc_corr_uncorr_uncer(weights, ds['sigma_sc'], corr_coef_uncer['c_scd'])
     sigma_strat_w = calc_corr_uncorr_uncer(weights, ds['sigma_strat'], corr_coef_uncer['c_strat'])
-    sigma_re_w = calc_corr_uncorr_uncer(weights, ds['sigma_re'], corr_coef_uncer['c_strat'])
+    sigma_re_w = calc_corr_uncorr_uncer(weights, ds['sigma_re'], corr_coef_uncer['c_re'])
     std2 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2)
     std3 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2+
                    (0.1*ds_in.no2.values)**2)
