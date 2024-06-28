@@ -79,16 +79,20 @@ ax.fill_between(dates_float,
                 color='C1',edgecolors=None,
                 alpha=0.3
                 )
+ax.fill_between([2020.1667,2020.3777],0,18,color='C1',edgecolors=None,alpha=0.1)
+ax.fill_between([2020.3777,2021.417],0,18,color='C1',edgecolors=None,alpha=0.05)
+ax.text(2020.14,13,'lockdown',fontsize=8)
+ax.text(2020.45,13,'COVID-19 containment measures',fontsize=8)
 ax.set_xticks(tick_idx)
 ax.set_xticklabels(np.arange(2018,2023,1).astype(str))
 ax.tick_params(axis='both', which='major', labelsize=10)
 # ax.xaxis.set_minor_locator(MultipleLocator(1/12))
-ax.set_ylim(ymin=0)
 ax.set_ylabel("Mean tropospheric column\n[10$^{15}$ molecules/cm$^2$]",fontsize=12)
 ax.yaxis.set_label_position("right")
 ax.yaxis.tick_right()
 ax.grid(linestyle=':',linewidth=0.5) 
 ax.set_xlim([2018.2,2022.2])
+ax.set_ylim([0,14])
 plt.title(f"{location} - TROPOMI NO$_2$ Tropospheric VCD")
 
 

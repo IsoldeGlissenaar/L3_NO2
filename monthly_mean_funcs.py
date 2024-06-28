@@ -674,7 +674,7 @@ def add_time(ds,files,date,weights,split_hems=False):
         regions_lon = ['all']
         lon_idx = np.array([[0,ds.sizes['longitude']],[-9999,-9999]]).astype(int)
 
-    time = np.full((ds.sizes['latitude'],ds.sizes['longitude']),np.nan).astype('datetime64[D]')
+    time = np.full((ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
     mean_local_time = np.full((ds.sizes['latitude'],ds.sizes['longitude']),np.nan)
 
     for d,region in enumerate(regions):
@@ -709,7 +709,7 @@ def add_time(ds,files,date,weights,split_hems=False):
                     i2 = i-lat_idx[d,0]
                     j2 = j-lon_idx[d2,0]
                     if ~np.isnan(mean_day[i2,j2]):
-                        time[i,j] = f'{date[0:4]}-{date[4:6]}-{"{:02d}".format(int(np.round(mean_day[i2,j2])))}'
+                        time[i,j] = np.round(mean_day[i2,j2])
             del day,mean_day
     
             #Add effective time of day 
@@ -721,14 +721,20 @@ def add_time(ds,files,date,weights,split_hems=False):
             local_time[local_time>86400] = local_time[local_time>86400]-86400
             mean_local_time[lat_idx[d,0]:lat_idx[d,1],lon_idx[d2,0]:lon_idx[d2,1]][~zero_weight] = np.nansum(weights_r*local_time,axis=0)[~zero_weight]/np.nansum(weights_r,axis=0)[~zero_weight]
             del time_of_day,local_time,weights_r,zero_weight,nonan_time,lon
-
-    ds['eff_time'] = xr.DataArray(data=time,
+            
+    t = np.array([np.datetime64(f"{date[0:4]}-{date[4:6]}-01 00:00:00.000000000")])
+    t = t[0].astype('datetime64[D]')-np.datetime64('1995-01-01')
+    t = t.astype('double')
+                 
+    ds['eff_time'] = xr.DataArray(data=time.astype('double'),
                               dims = ['latitude','longitude']
                               )
     ds['local_time'] = xr.DataArray(data=mean_local_time/86400.,
                               dims = ['latitude','longitude']
                               )
-
+    ds['time'] = xr.DataArray(data = [t],
+                              dims = ['time']
+                              )
     return ds
 
 
@@ -752,20 +758,12 @@ def get_attrs(date,ds_out,main_sets):
     #Get geospatial resolution
     geospatial_lat_res = np.round(ds_out.latitude.values[5]-ds_out.latitude.values[4],1)
     geospatial_lon_res = np.round(ds_out.longitude.values[5]-ds_out.longitude.values[4],1)
-
-    #Get array of available dates in month
-    year = int(date[:4])
-    month = int(date[4:6])
-    last_day = str(calendar.monthrange(year, month)[1]+1)
-    dates = np.arange(int(date+'01'),int(date+last_day),1).astype(str)
     
     #Get list of superobservation orbit files
-    files = []
-    for date in dates:
-        in_folder = f'/net/pc200252/nobackup_1/users/gomenrt/no2_tropomi/PAL_reduced/{date[:6]}/'
-        files.extend(sorted(os.listdir(in_folder)))
-
+    in_folder = f'/net/pc200252/nobackup_1/users/gomenrt/no2_tropomi/PAL_reduced/{date}/'
+    files = sorted(os.listdir(in_folder))
     time_coverage_list = " ".join([file[20:35] for file in files])
+    
     datetime_start = datetime.datetime.strptime(files[0][20:35],'%Y%m%dT%H%M%S') - datetime.datetime(1995,1,1)
     datetime_start = datetime_start.days + datetime_start.seconds/60/60/24
     datetime_stop = datetime.datetime.strptime(files[-1][36:51],'%Y%m%dT%H%M%S') - datetime.datetime(1995,1,1)
@@ -861,7 +859,7 @@ def add_land_water_mask(ds,attrs):
     return(ds)
 
 
-def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_filename):
+def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_filename,date):
     """
     Create output dataset.
     
@@ -980,10 +978,12 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
         #                       ),                             
 
         #
-        'time' : xr.DataArray(data = np.array([np.datetime64(f"{attrs['files'][0][20:24]}-{attrs['files'][0][24:26]}-{attrs['files'][0][26:28]} 00:00:00.000000000")]),
+        'time' : xr.DataArray(data = ds.time.values,
                               dims = ['time'],
                               attrs = {'description':'start date of monthly mean',
-                                       'standard_name':'time'
+                                       'long_name':'number of days since 1995-01-01',
+                                       'standard_name':'time',
+                                       'units':'days since 1995-01-01 00:00:00 0:00'
                                        }
                                 ),
         'latitude' : xr.DataArray(data = ds.latitude.values,
@@ -1127,8 +1127,10 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
     #Effective time
     ds2['eff_date'] = xr.DataArray(data = np.expand_dims(ds.eff_time.values,axis=0),
                                    dims = ['time','latitude','longitude'],
-                                   attrs = {'description':'effective date of observation',
-                                            'standard_name':'effective date'
+                                   attrs = {'long_name':'effective date',
+                                            'description':'effective date of observation',
+                                            'standard_name':'effective date',
+                                            'units':f'days since {date[0:4]}-{date[4:6]}-01 00:00:00',
                                            }
                                     )
     ds2['eff_frac_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
