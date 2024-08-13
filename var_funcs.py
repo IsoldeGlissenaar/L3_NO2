@@ -184,10 +184,10 @@ def add_time(ds,files,date,weights,split_hems=False):
     t = t[0].astype('datetime64[D]')-np.datetime64('1995-01-01')
     t = t.astype('double')
                  
-    ds['eff_time'] = xr.DataArray(data=time.astype('double'),
+    ds['eff_date'] = xr.DataArray(data=time.astype('double'),
                               dims = ['latitude','longitude']
                               )
-    ds['local_time'] = xr.DataArray(data=mean_local_time/86400.,
+    ds['eff_frac_day'] = xr.DataArray(data=mean_local_time/86400.,
                               dims = ['latitude','longitude']
                               )
     ds['time'] = xr.DataArray(data = [t],
@@ -238,8 +238,7 @@ def add_land_water_mask(ds,attrs):
     Parameters
     ----------
     ds : xr Dataset
-        xarray Dataset with superobservation
-        orbits.
+        xarray Dataset output without land water mask.
     attrs : dictionary
         Dictionary with attributes to add to output.
     
@@ -266,6 +265,53 @@ def add_land_water_mask(ds,attrs):
                                                    'long_name' : 'land sea mask',
                                                    'units' : '1'}
                                           )
-    return(ds)
+    return ds
 
 
+
+def add_latlon_bnds(ds):
+    """
+    Add latitude bounds and longitude bounds
+    to the dataset. Works for regular grids.
+
+    Parameters
+    ----------
+    ds : xr Dataset
+        xarray Dataset output without lat and lon bounds.
+
+    Returns
+    -------
+    ds : xr Dataset
+        xarray Dataset output with lat and lon bounds.
+
+    """
+    lat_bnds_1 = [-90]
+    for i in range(len(ds.latitude.values)-1):
+        lat_bnds_1.append(np.round(ds.latitude.values[i]*2-lat_bnds_1[i],2))
+    lat_bnds_2 = lat_bnds_1[1:]
+    lat_bnds_2.append(90)
+    ds['latitude_bounds'] = xr.DataArray(data = np.array([lat_bnds_1,lat_bnds_2]).transpose(),
+                                          dims = ['latitude','independent_2'],
+                                          attrs = {'long_name' : 'grid latitude bounds',
+                                                   'units' : 'degree_north'}
+                                          )
+    # Regular grid
+    lon_bnds_1 = [-180]
+    for i in range(len(ds.longitude.values)-1):
+        lon_bnds_1.append(np.round(ds.longitude.values[i]*2-lon_bnds_1[i],2))
+    lon_bnds_2 = lon_bnds_1[1:]
+    lon_bnds_2.append(180)
+    
+    # Res-geoschem (2x2.5)
+    # lon_bnds_1 = [178.75,-178.75]
+    # for i in range(1,len(ds.longitude.values)-1):
+    #     lon_bnds_1.append(np.round(ds.longitude.values[i]*2-lon_bnds_1[i],2))
+    # lon_bnds_2 = lon_bnds_1[1:]
+    # lon_bnds_2.append(178.75)
+        
+    ds['longitude_bounds'] = xr.DataArray(data = np.array([lon_bnds_1,lon_bnds_2]).transpose(),
+                                          dims = ['longitude','independent_2'],
+                                          attrs = {'long_name' : 'grid longitude bounds',
+                                                   'units' : 'degree_east'}
+                                          )
+    return ds

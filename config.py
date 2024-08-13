@@ -45,7 +45,7 @@ def settings():
     #List of uncertainty variables to read 
     uncertainty_vars = {
         'no2_superobs' :                  {'conversion' : 6.02214e19,
-                                            'out_name' : 'no2'},
+                                            'out_name' : 'tropospheric_NO2_column_number_density'},
         'no2_superobs_sig_amf' :          {'conversion' : 6.02214e19,
                                             'out_name' : 'sigma_amf'},
         'no2_superobs_sig_slant_random' : {'conversion' : 6.02214e19,
@@ -59,12 +59,16 @@ def settings():
     #List of 2d variables to read
     variables_2d = {
         'no2_superobs' :                  {'conversion' : 6.02214e19,  #Mole/m2 to molecules/cm2
-                                            'out_name' : 'no2',
-                                            'get_mean' : False,
-                                            'dimension' : '2d'},
+                                            'out_name' : 'tropospheric_NO2_column_number_density',
+                                            'dimension' : '2d',
+                                            'attrs' : {'description':'NO2 troposhperic vertical column number density',
+                                                       'long_name':'NO2 VCD',
+                                                       'standard_name':'troposphere_mole_content_of_nitrogendioxide',
+                                                       'units':'molec/cm^2',
+                                                     }    
+                                            },
         'surface_pressure' :              {'conversion' : 1e-2,   #Pa to hPa
                                             'out_name' : 'surface_pressure',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description':'surface pressure',
                                                         'long_name':'surface pressure',
@@ -72,19 +76,13 @@ def settings():
                                             },
         'surface_albedo' :                {'conversion' : 1,
                                             'out_name' : 'surface_albedo',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description':'surface LER (440 nm)',
                                                         'long_name':'surface LER (440nm)',
                                                         'units':'1'}
                                             },
-        'covered_area_fraction' :         {'conversion' : 1,
-                                            'out_name' : 'covered_area_fraction',
-                                            'get_mean' : False,
-                                            'dimension' : '2d',},
         'scd' :                           {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_slant_column_number_density',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'NO2 slant column number density',
                                                         'long_name' : 'NO2 SCD',
@@ -92,7 +90,6 @@ def settings():
                                             },
         'amf_trop_superobs' :             {'conversion' : 1,
                                             'out_name' : 'tropospheric_NO2_column_number_density_amf',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'tropospheric air mass factor',
                                                         'long_name' : 'NO2 tropospheric AMF (440nm)',
@@ -100,7 +97,6 @@ def settings():
                                             },
         'amf_total_superobs' :             {'conversion' : 1,
                                             'out_name' : 'total_NO2_column_number_density_amf',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'total air mass factor',
                                                         'long_name' : 'NO2 total AMF (440nm)',
@@ -108,7 +104,6 @@ def settings():
                                             },
         'strat_column' :                  {'conversion' : 6.02214e19,
                                             'out_name' : 'NO2_stratospheric_column_number_density',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'Stratospheric NO2 vertical column number density',
                                                         'long_name' : 'NO2 stratospheric VCD',
@@ -116,23 +111,20 @@ def settings():
                                             },
         'cloud_radiance_fraction' :       {'conversion' : 1,
                                             'out_name' : 'cloud_fraction',
-                                            'get_mean' : True,
                                             'dimension' : '2d',
                                             'attrs' : {'description' : 'effective cloud fraction',
                                                         'long_name' : 'cloud fraction',
                                                         'units' : '1'},
                                                 },
         'cloud_pressure' :                {'conversion' : 1e-2,
-                                            'out_name' : 'cloud_pressure',
-                                            'get_mean' : True,
-                                            'dimension' : '2d',
-                                            'attrs' : {'description' : 'cloud pressure at optical centroid',
-                                                        'long_name' : 'cloud_pressure',
-                                                        'units' : 'hPa'}
-                                                },
+                                           'out_name' : 'cloud_pressure',
+                                           'dimension' : '2d',
+                                           'attrs' : {'description' : 'cloud pressure at optical centroid',
+                                                      'long_name' : 'cloud_pressure',
+                                                      'units' : 'hPa'}
+                                           },
         # 'kernel_full' :                   {'conversion' : 1,
         #                                     'out_name' : 'NO2_averaging_kernel',
-        #                                     'get_mean' : True,
         #                                     'dimension' : '3d',
         #                                     'attrs': {'description' : 'Column averaging kernel',
         #                                               'long_name' : 'full averaging kernel',
@@ -163,41 +155,138 @@ def settings():
         
     #Variables to calculate 2D
     calc_vars = {
-        'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.no2.values*ds.tropospheric_NO2_column_number_density_amf.values',
-                                                          'out_name' : 'NO2_slant_column_number_density_troposphere',
-                                                          'get_mean' : True,
-                                                          'do_func' : True,
-                                                          'dimension' : '2d',
-                                                          'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
+        'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.tropospheric_NO2_column_number_density.values*ds.tropospheric_NO2_column_number_density_amf.values',
+                                                         'out_name' : 'NO2_slant_column_number_density_troposphere',
+                                                         'do_func' : True,
+                                                         'dimension' : '2d',
+                                                         'attrs' : {'description' : 'Tropospheric NO2 slant column number density',
                                                                     'long_name' : 'NO2 trop SCD',
                                                                     'units' : 'molec/cm^2'}
                                                             },
         'tropospheric_NO2_column_number_density_count' : {'out_name' : 'tropospheric_NO2_column_number_density_count',
-                                                          'get_mean' : True,
                                                           'do_func' : False,
                                                           'dimension' : '2d',
                                                           'attrs' : {'description' : 'Effective number of observations per cell/ fractional coverage (coverage divided by number of days)',
-                                                                      'units' : '1'}
+                                                                     'units' : '1'}
                                                         },
-        'qa_L3' :                                      {'func' : '(ds.tropospheric_NO2_column_number_density_count>=0.1)&(~np.isnan(ds.no2.values))',
+        'qa_L3' :                                      {'func' : '(ds.tropospheric_NO2_column_number_density_count>=0.1)&(~np.isnan(ds.tropospheric_NO2_column_number_density.values))',
                                                         'out_name' : 'qa_L3',
-                                                        'get_mean' : True,
                                                         'do_func' : True,
                                                         'dimension' : '2d',
                                                         'attrs' : {'description' : 'Gridded data quality assurance value (0: not valid, 1: valid)',
-                                                                    'long_name' : 'data quality assurance value',
-                                                                    'units' : '1'}
+                                                                   'long_name' : 'data quality assurance value',
+                                                                   'units' : '1'}
                                                         }, 
         'no_observations' :                              {'out_name' : 'no_observations',
-                                                          'get_mean' : True,
                                                           'do_func' : False,
                                                           'dimension' : '2d',
                                                           'attrs' : {'description' : 'Total number of superobservations used to create temporal mean',
-                                                                      'long_name' : 'number of superobservations',
-                                                                      'units' : '1'}
-                                                          }
-                  }
-    
+                                                                     'long_name' : 'number of superobservations',
+                                                                     'units' : '1'}
+                                                          },
+        'tropospheric_NO2_column_number_density_temporal_std' : {'out_name' : 'tropospheric_NO2_column_number_density_temporal_std',
+                                                                 'do_func' : False,
+                                                                 'dimension' : '2d',
+                                                                 'attrs' : {'description':'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                                          ' number density associated with standard deviation of'+
+                                                                                          ' L2 input data (sigma_1) within the cell',
+                                                                            'long_name':'temporal standard deviation',
+                                                                            'units':'molec/cm^2',
+                                                                            }
+                                                                 },
+        'tropospheric_NO2_column_number_density_measurement_uncertainty_kernel' : {
+                                                                 'out_name' : 'tropospheric_NO2_column_number_density_measurement_uncertainty_kernel',
+                                                                 'do_func' : False,
+                                                                 'dimension' : '2d',
+                                                                 'attrs' : {'description':'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                                          ' number density associated with area-averaged propagated'+
+                                                                                          ' uncertainty of L2 input data, without the profile'+
+                                                                                          ' uncertainty contribution (sigma_3)',
+                                                                            'long_name':'NO2 VCD uncertainty kernel',
+                                                                            'units':'molec/cm^2',
+                                                                            }
+                                                                 },
+        'tropospheric_NO2_column_number_density_measurement_uncertainty' : {
+                                                                 'out_name' : 'tropospheric_NO2_column_number_density_measurement_uncertainty',
+                                                                 'do_func' : False,
+                                                                 'dimension' : '2d',
+                                                                 'attrs' : {'description':'Uncertainty on the NO2 tropospheric vertical column'+
+                                                                                          ' number density associated with area-averaged propagated'+
+                                                                                          ' uncertainty of L2 input data (sigma_2)',
+                                                                            'long_name':'NO2 VCD uncertainty',
+                                                                            'units':'molec/cm^2',
+                                                                            }
+                                                                 },
+        'tropospheric_NO2_column_number_density_total_uncertainty_kernel' : {
+                                                                 'out_name' : 'tropospheric_NO2_column_number_density_total_uncertainty_kernel',
+                                                                 'do_func' : False,
+                                                                 'dimension' : '2d',
+                                                                 'attrs' : {'description':'Total uncertainty on the NO2 tropospheric vertical column'+
+                                                                                        ' number density associated with time-averaged propagated'+
+                                                                                        ' uncertainty of L2 input data and temporal representativity, '+
+                                                                                        'without the profile uncertainty contribution',
+                                                                            'long_name':'NO2 VCD total uncertainty kernel',
+                                                                            'units':'molec/cm^2',
+                                                                            }
+                                                                 },
+        'tropospheric_NO2_column_number_density_total_uncertainty' : {
+                                                                 'out_name' : 'tropospheric_NO2_column_number_density_total_uncertainty',
+                                                                 'do_func' : False,
+                                                                 'dimension' : '2d',
+                                                                 'attrs' : {'description':'Total uncertainty on the NO2 tropospheric vertical column'+
+                                                                                          ' number density associated with time-averaged propagated'+
+                                                                                          ' uncertainty of L2 input data and temporal representativity',
+                                                                            'long_name':'NO2 VCD total uncertainty',
+                                                                            'units':'molec/cm^2',
+                                                                            }
+                                                                 },
+        'NO2_slant_column_number_density_uncertainty' : {'out_name' : 'NO2_slant_column_number_density_uncertainty',
+                                                         'do_func' : False,
+                                                         'dimension' : '2d',
+                                                         'attrs' : {'description':'NO2 slant column number density uncertainty',
+                                                                    'long_name':'NO2 SCDE',
+                                                                    'units':'molec/cm^2',
+                                                                   }
+                                                         },
+        'eff_date' :     {'out_name' : 'eff_date',
+                          'do_func' : False,
+                          'dimension' : '2d',
+                          'attrs' : {'long_name':'effective date',
+                                     'description':'effective date of observation',
+                                     'standard_name':'effective date',
+                                     'units':f'days since {date[0:4]}-{date[4:6]}-01 00:00:00',
+                                     }
+                          },
+        'eff_frac_day' : {'out_name' : 'eff_frac_day',
+                          'do_func' : False,
+                          'dimension' : '2d',
+                          'attrs' : {'description':'effective fractional day in local solar time. '+
+                                                   'UTC = local_solar_time - longitude/180',
+                                     'standard_name':'effective fractional day',
+                                     'units':'1'
+                                     }
+                          },
+        # 'tropospheric_NO2_column_number_density_uncertainty_random' : 
+        #                       xr.DataArray(data = np.expand_dims(ds.random.values,axis=0),
+        #                                    dims = ['time','latitude','longitude'],
+        #                                    attrs = {'description':'Random uncertainty on the NO2 tropospheric '+
+        #                                             'vertical column number density (slant column density)',
+        #                                             'long_name':'NO2 VCD random uncertainty',
+        #                                             'units':'molec/cm^2',
+        #                                             }       
+        #                                    ),
+        # 'tropospheric_NO2_column_number_density_uncertainty_systematic' : 
+        #                       xr.DataArray(data = np.expand_dims(ds.systematic.values,axis=0),
+        #                                    dims = ['time','latitude','longitude'],
+        #                                    attrs = {'description':'Systematic uncertainty on the NO2 tropospheric '+
+        #                                             'vertical column number density (AMF and stratospheric column)',
+        #                                             'long_name':'NO2 VCD systematic uncertainty',
+        #                                             'units':'molec/cm^2',
+        #                                             }
+        #                       ),  
+                }
+                                
+
     
     @dataclass 
     class Settings:

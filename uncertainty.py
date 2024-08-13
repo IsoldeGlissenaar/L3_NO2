@@ -42,36 +42,36 @@ def get_uncertainty(ds,weights,files,uncertainty_vars,corr_coef_uncer,split_hems
     """
     if split_hems==True:
         ds_SH = get_uncertainty_superobs(files,uncertainty_vars,region='SH')
-        ds_SH['weighted_mean'] = ds.sel(latitude=slice(-90,0))['no2']
+        ds_SH['weighted_mean'] = ds.sel(latitude=slice(-90,0))['tropospheric_NO2_column_number_density']
         ds_SH['std1'], ds_SH['temporal_rep'] = standev1(ds_SH,weights[:,:450,:],files)
-        ds_SH = ds_SH.drop_vars(["no2","no_superobs","weighted_mean"])
+        ds_SH = ds_SH.drop_vars(["tropospheric_NO2_column_number_density","no_superobs","weighted_mean"])
         ds_SH['std2'], ds_SH['std3'], ds_SH['scd_uncer'] = standev2(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         # ds_SH['random'], ds_SH['systematic'] = random_sys(ds_SH,ds.sel(latitude=slice(-90,0)),weights[:,:450,:],corr_coef_uncer)
         
         ds_NH = get_uncertainty_superobs(files,uncertainty_vars,region='NH')
-        ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['no2']
+        ds_NH['weighted_mean'] = ds.sel(latitude=slice(0,90))['tropospheric_NO2_column_number_density']
         ds_NH['std1'], ds_NH['temporal_rep'] = standev1(ds_NH,weights[:,450:,:],files)
-        ds_NH = ds_NH.drop_vars(["no2","no_superobs","weighted_mean"])
+        ds_NH = ds_NH.drop_vars(["tropospheric_NO2_column_number_density","no_superobs","weighted_mean"])
         ds_NH['std2'], ds_NH['std3'], ds_NH['scd_uncer'] = standev2(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
         # ds_NH['random'], ds_NH['systematic'] = random_sys(ds_NH,ds.sel(latitude=slice(0,90)),weights[:,450:,:],corr_coef_uncer)
         
         ds_uncer = xr.concat([ds_SH,ds_NH], dim="latitude")
     elif split_hems==False:
         ds_uncer = get_uncertainty_superobs(files,uncertainty_vars,region='all')
-        ds_uncer['weighted_mean'] = ds.no2
+        ds_uncer['weighted_mean'] = ds.tropospheric_NO2_column_number_density
         ds_uncer['std1'], ds_uncer['temporal_rep'] = standev1(ds_uncer,weights,files)
-        ds_uncer = ds_uncer.drop_vars(["no2","no_superobs","weighted_mean"])
+        ds_uncer = ds_uncer.drop_vars(["tropospheric_NO2_column_number_density","no_superobs","weighted_mean"])
         ds_uncer['std2'], ds_uncer['std3'], ds_uncer['scd_uncer'] = standev2(ds_uncer,ds,weights,corr_coef_uncer)
         # ds_uncer['random'], ds_uncer['systematic'] = random_sys(ds_uncer,ds,weights,corr_coef_uncer)
         
-    ds['std1'] = ds_uncer['std1']
-    ds['std2'] = ds_uncer['std2']
-    ds['std3'] = ds_uncer['std3']
-    ds['scd_uncer'] = ds_uncer['scd_uncer']
+    ds['tropospheric_NO2_column_number_density_temporal_std'] = ds_uncer['std1']
+    ds['tropospheric_NO2_column_number_density_measurement_uncertainty_kernel'] = ds_uncer['std2']
+    ds['tropospheric_NO2_column_number_density_measurement_uncertainty'] = ds_uncer['std3']
+    ds['NO2_slant_column_number_density_uncertainty'] = ds_uncer['scd_uncer']
     # ds['random'] = ds_uncer['random']
     # ds['systematic'] = ds_uncer['systematic'] 
-    ds['std2_total'] = np.sqrt( ds_uncer['std2']**2 + ds_uncer['temporal_rep']**2 )
-    ds['std3_total'] = np.sqrt( ds_uncer['std3']**2 + ds_uncer['temporal_rep']**2 )
+    ds['tropospheric_NO2_column_number_density_total_uncertainty_kernel'] = np.sqrt( ds_uncer['std2']**2 + ds_uncer['temporal_rep']**2 )
+    ds['tropospheric_NO2_column_number_density_total_uncertainty'] = np.sqrt( ds_uncer['std3']**2 + ds_uncer['temporal_rep']**2 )
     return ds
 
 
@@ -211,7 +211,7 @@ def standev1(ds,weights,files):
     days = np.array(days)
     
     #Get number of days with valid observation
-    values = (~np.isnan(ds['no2'].values))
+    values = (~np.isnan(ds['tropospheric_NO2_column_number_density'].values))
     n = np.full((ds.sizes['latitude'],ds.sizes['longitude']),0)
     for i in range(values.shape[1]):
         for j in range(values.shape[2]):
@@ -221,7 +221,7 @@ def standev1(ds,weights,files):
     #Fix obs-1 problem for only 1 observation
     no_superobs = ds['no_superobs'].values
     no_superobs[no_superobs==1] = 2
-    std1 = np.sqrt(( np.nansum( weights*(ds['no2'].values-ds['weighted_mean'].values)**2,axis=0 ) )/
+    std1 = np.sqrt(( np.nansum( weights*(ds['tropospheric_NO2_column_number_density'].values-ds['weighted_mean'].values)**2,axis=0 ) )/
                    ( (no_superobs-1) * np.nansum(weights,axis=0)) )
     
     temporal_rep = std1/np.sqrt(n) * np.sqrt( (N-n)/(N-1) )
@@ -255,7 +255,7 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
     sigma_re_w = calc_corr_uncorr_uncer(weights, ds['sigma_re'], corr_coef_uncer['c_re'])
     std2 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2)
     std3 = np.sqrt(sigma_amf_w**2+sigma_sc_w**2+sigma_strat_w**2+sigma_re_w**2+
-                   (0.1*ds_in.no2.values)**2)
+                   (0.1*ds_in.tropospheric_NO2_column_number_density.values)**2)
     return (xr.DataArray(data = std2, dims = ['latitude','longitude']), 
             xr.DataArray(data = std3, dims = ['latitude','longitude']),
             xr.DataArray(data = sigma_sc_w, dims=["latitude","longitude"])

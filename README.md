@@ -21,7 +21,6 @@ This is the documentation for the NO2 L3-software developed by Isolde Glissenaar
 
 - [Installation](#installation)
 - [How to Use](#HowToUse)
-- [Advanced Configuration Options](#advanced-configuration-options)
 
 
 <!-- CONTENT -->

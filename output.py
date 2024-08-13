@@ -103,126 +103,37 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
         output dataset for saving.
     """
 
-    #Create dataset with main values and attributes
+    #Create dataset with dimensions and attributes
     ds2 = xr.Dataset(data_vars = {
-        'tropospheric_NO2_column_number_density' : 
-                              xr.DataArray(data = np.expand_dims(ds.no2.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'NO2 troposhperic vertical column number density',
-                                                    'long_name':'NO2 VCD',
-                                                    'standard_name':'troposphere_mole_content_of_nitrogendioxide',
-                                                    'units':'molec/cm^2',
-                                                    }    
-                                           ),
-        'tropospheric_NO2_column_number_density_temporal_std' : 
-                              xr.DataArray(data = np.expand_dims(ds.std1.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with standard deviation of'+
-                                                                  ' L2 input data (sigma_1) within the cell',
-                                                    'long_name':'temporal standard deviation',
-                                                    'units':'molec/cm^2',
-                                                    }
-                              ),
-        'tropospheric_NO2_column_number_density_measurement_uncertainty_kernel' : 
-                              xr.DataArray(data = np.expand_dims(ds.std2.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with area-averaged propagated'+
-                                                                  ' uncertainty of L2 input data, without the profile'+
-                                                                  ' uncertainty contribution (sigma_3)',
-                                                    'long_name':'NO2 VCD uncertainty kernel',
-                                                    'units':'molec/cm^2',
+                'time' : xr.DataArray(data = ds.time.values,
+                                      dims = ['time'],
+                                      attrs = {'description':'start date of monthly mean',
+                                               'long_name':'number of days since 1995-01-01',
+                                               'standard_name':'time',
+                                               'units':'days since 1995-01-01 00:00:00 0:00'
+                                               }
+                                        ),
+                'latitude' : xr.DataArray(data = ds.latitude.values,
+                                          dims = ['latitude'],
+                                          attrs = {'units':'degree_north',
+                                                   'standard_name':'latitude',
+                                                   'bounds':'latitude_bounds'
+                                                   }
+                                          ),
+                'longitude' : xr.DataArray(data = ds.longitude.values,
+                                           dims = ['longitude'],
+                                           attrs = {'units':'degree_east',
+                                                    'standard_name':'longitude',
+                                                    'bounds':'longitude_bounds'
                                                     }
                                            ),
-        'tropospheric_NO2_column_number_density_measurement_uncertainty' : 
-                              xr.DataArray(data = np.expand_dims(ds.std3.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with area-averaged propagated'+
-                                                                  ' uncertainty of L2 input data (sigma_2)',
-                                                    'long_name':'NO2 VCD uncertainty',
-                                                    'units':'molec/cm^2',
-                                                    }
+                'vertical' : xr.DataArray(data = np.arange(1,35,1).astype('int32'),
+                                        dims = ['vertical'],
+                                        attrs = {'units':'1',
+                                                 'long_name':'vertical dimension index'
+                                                 }
                                            ),
-        'tropospheric_NO2_column_number_density_total_uncertainty_kernel' : 
-                              xr.DataArray(data = np.expand_dims(ds.std2_total.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Total uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with time-averaged propagated'+
-                                                                  ' uncertainty of L2 input data and temporal representativity, '+
-                                                                  'without the profile uncertainty contribution',
-                                                    'long_name':'NO2 VCD total uncertainty kernel',
-                                                    'units':'molec/cm^2',
-                                                    }
-                                           ),
-        'tropospheric_NO2_column_number_density_total_uncertainty' : 
-                              xr.DataArray(data = np.expand_dims(ds.std3_total.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'Total uncertainty on the NO2 tropospheric vertical column'+
-                                                                  ' number density associated with time-averaged propagated'+
-                                                                  ' uncertainty of L2 input data and temporal representativity',
-                                                    'long_name':'NO2 VCD total uncertainty',
-                                                    'units':'molec/cm^2',
-                                                    }
-                                           ),
-        'NO2_slant_column_number_density_uncertainty' : 
-                              xr.DataArray(data = np.expand_dims(ds.scd_uncer.values,axis=0),
-                                           dims = ['time','latitude','longitude'],
-                                           attrs = {'description':'NO2 slant column number density uncertainty',
-                                                    'long_name':'NO2 SCDE',
-                                                    'units':'molec/cm^2',
-                                                    }
-                                           ),    
-        # 'tropospheric_NO2_column_number_density_uncertainty_random' : 
-        #                       xr.DataArray(data = np.expand_dims(ds.random.values,axis=0),
-        #                                    dims = ['time','latitude','longitude'],
-        #                                    attrs = {'description':'Random uncertainty on the NO2 tropospheric '+
-        #                                             'vertical column number density (slant column density)',
-        #                                             'long_name':'NO2 VCD random uncertainty',
-        #                                             'units':'molec/cm^2',
-        #                                             }       
-        #                                    ),
-        # 'tropospheric_NO2_column_number_density_uncertainty_systematic' : 
-        #                       xr.DataArray(data = np.expand_dims(ds.systematic.values,axis=0),
-        #                                    dims = ['time','latitude','longitude'],
-        #                                    attrs = {'description':'Systematic uncertainty on the NO2 tropospheric '+
-        #                                             'vertical column number density (AMF and stratospheric column)',
-        #                                             'long_name':'NO2 VCD systematic uncertainty',
-        #                                             'units':'molec/cm^2',
-        #                                             }
-        #                       ),                             
-
-        #
-        'time' : xr.DataArray(data = ds.time.values,
-                              dims = ['time'],
-                              attrs = {'description':'start date of monthly mean',
-                                       'long_name':'number of days since 1995-01-01',
-                                       'standard_name':'time',
-                                       'units':'days since 1995-01-01 00:00:00 0:00'
-                                       }
-                                ),
-        'latitude' : xr.DataArray(data = ds.latitude.values,
-                                  dims = ['latitude'],
-                                  attrs = {'units':'degree_north',
-                                           'standard_name':'latitude',
-                                           'bounds':'latitude_bounds'
-                                           }
-                                  ),
-        'longitude' : xr.DataArray(data = ds.longitude.values,
-                                   dims = ['longitude'],
-                                   attrs = {'units':'degree_east',
-                                            'standard_name':'longitude',
-                                            'bounds':'longitude_bounds'
-                                            }
-                                   ),
-        'vertical' : xr.DataArray(data = np.arange(1,35,1).astype('int32'),
-                                dims = ['vertical'],
-                                attrs = {'units':'1',
-                                         'long_name':'vertical dimension index'
-                                         }
-                                   ),
-                                    },
+                                            },
         attrs = {'Conventions':'CF-1.8 HARP-1.0',  
                  'title':'NetCDF CF file providing L3 total nitrogendioxide satellite observations',
                  'institution':'KNMI',
@@ -281,24 +192,23 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
                  }
         )
         
-    #Add extra variables from variables_2d & calc_vars: when get_mean is true, safe into xarray Dataset
+    #Add variables from variables_2d & calc_vars 
     for lis in variables_2d:
         variables = variables_2d[lis]
         for var in variables:
             var_dict = variables[var]
-            if var_dict['get_mean']:
-                if var_dict['dimension']=='2d':
-                    ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
-                                                            dims = ['time','latitude','longitude'],
-                                                            attrs = var_dict['attrs']
-                                                            )
-                elif var_dict['dimension']=='3d':
-                    ds2[var_dict['out_name']] = xr.DataArray(data = np.transpose(np.expand_dims(
-                                                                                    ds[var_dict['out_name']].values,axis=0),
-                                                                                 [0,2,3,1]),
-                                                            dims = ['time','latitude','longitude','vertical'],
-                                                            attrs = var_dict['attrs']
-                                                            )
+            if var_dict['dimension']=='2d':
+                ds2[var_dict['out_name']] = xr.DataArray(data = np.expand_dims(ds[var_dict['out_name']].values,axis=0),
+                                                        dims = ['time','latitude','longitude'],
+                                                        attrs = var_dict['attrs']
+                                                        )
+            elif var_dict['dimension']=='3d':
+                ds2[var_dict['out_name']] = xr.DataArray(data = np.transpose(np.expand_dims(
+                                                                                ds[var_dict['out_name']].values,axis=0),
+                                                                             [0,2,3,1]),
+                                                        dims = ['time','latitude','longitude','vertical'],
+                                                        attrs = var_dict['attrs']
+                                                        )
                     
     #Add variables from variables_1d 
     for var in variables_1d:
@@ -308,54 +218,9 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
     #Add land water mask
     ds2 = vf.add_land_water_mask(ds2, attrs)
     
-    #Add lat_bnds and lon_bnds
-    lat_bnds_1 = [-90]
-    for i in range(len(ds2.latitude.values)-1):
-        lat_bnds_1.append(np.round(ds2.latitude.values[i]*2-lat_bnds_1[i],2))
-    lat_bnds_2 = lat_bnds_1[1:]
-    lat_bnds_2.append(90)
-    ds2['latitude_bounds'] = xr.DataArray(data = np.array([lat_bnds_1,lat_bnds_2]).transpose(),
-                                          dims = ['latitude','independent_2'],
-                                          attrs = {'long_name' : 'grid latitude bounds',
-                                                   'units' : 'degree_north'}
-                                          )
-    # #Regular grid
-    lon_bnds_1 = [-180]
-    for i in range(len(ds2.longitude.values)-1):
-        lon_bnds_1.append(np.round(ds2.longitude.values[i]*2-lon_bnds_1[i],2))
-    lon_bnds_2 = lon_bnds_1[1:]
-    lon_bnds_2.append(180)
-    
-    # Res-geoschem (2x2.5)
-    # lon_bnds_1 = [178.75,-178.75]
-    # for i in range(1,len(ds2.longitude.values)-1):
-    #     lon_bnds_1.append(np.round(ds2.longitude.values[i]*2-lon_bnds_1[i],2))
-    # lon_bnds_2 = lon_bnds_1[1:]
-    # lon_bnds_2.append(178.75)
-    
-    
-    ds2['longitude_bounds'] = xr.DataArray(data = np.array([lon_bnds_1,lon_bnds_2]).transpose(),
-                                          dims = ['longitude','independent_2'],
-                                          attrs = {'long_name' : 'grid longitude bounds',
-                                                   'units' : 'degree_east'}
-                                          )
-    
-    #Effective time
-    ds2['eff_date'] = xr.DataArray(data = np.expand_dims(ds.eff_time.values,axis=0),
-                                   dims = ['time','latitude','longitude'],
-                                   attrs = {'long_name':'effective date',
-                                            'description':'effective date of observation',
-                                            'standard_name':'effective date',
-                                            'units':f'days since {date[0:4]}-{date[4:6]}-01 00:00:00',
-                                           }
-                                    )
-    ds2['eff_frac_day'] = xr.DataArray(data = np.expand_dims(ds.local_time.values,axis=0),
-                                       dims = ['time','latitude','longitude'],
-                                       attrs = {'description':'effective fractional day in local solar time. '+
-                                                                'UTC = local_solar_time - longitude/180',
-                                                'standard_name':'effective fractional day'
-                                                }
-                                         )
+    #Add lat and lon bounds
+    ds2 = vf.add_latlon_bnds(ds2)
+
         
     return ds2
     
