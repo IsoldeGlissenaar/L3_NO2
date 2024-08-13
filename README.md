@@ -21,7 +21,6 @@ This is the documentation for the NO2 L3-software developed by Isolde Glissenaar
 
 - [Installation](#installation)
 - [How to Use](#HowToUse)
-- [Command Line Interface](#command-line-interface)
 - [Advanced Configuration Options](#advanced-configuration-options)
 
 
@@ -72,7 +71,14 @@ micromamba activate L3_NO2
 
 # How to use
 
-...
+Change the settings in config.py to the correct dataset. In order to run the temporal mean script 
+for one month, type in your command prompt/terminal:
+
+~~~
+python main.py 'yyyymm'
+~~~
+
+where yyyymm is for example 202006 for June 2020.
 
 
 

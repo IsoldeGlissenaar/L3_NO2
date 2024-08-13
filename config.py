@@ -29,10 +29,10 @@ def settings():
     date = '201901' 
 
     main_sets = {'dataset':'02x02',
-                  'split_hems':True,
-                  'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
-                  'L3_out_version':'0121',
-                  }
+                 'split_hems':True,
+                 'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
+                 'L3_out_version':'0121',
+                 }
         
     #Correlation coefficients for uncertainty calculation
     corr_coef_uncer = {
