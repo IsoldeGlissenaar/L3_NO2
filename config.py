@@ -4,27 +4,9 @@
 Created on Wed Nov 22 17:02:41 2023
 
 @author: Isolde Glissenaar
-
-Determine monthly mean tropospheric NO2 column
-from superobservations (from the spatial mean 
-superobservation code by Pieter Rijsdijk) for
-TROPOMI (2018-05-01 - 2021-12-31). 
 """
 
-import sys
-import warnings
-from monthly_mean_funcs import (
-    get_attrs,
-    output_dataset,
-    get_list_of_files,
-    get_mean_all_vars, 
-    get_uncertainty,
-    add_vars,
-    add_count,
-    add_time
-    )
-
-warnings.filterwarnings("ignore")
+from dataclasses import dataclass
 
 def settings():
     '''
@@ -47,10 +29,10 @@ def settings():
     date = '201901' 
 
     main_sets = {'dataset':'02x02',
-                 'split_hems':False,
-                 'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
-                 'L3_out_version':'0121',
-                 }
+                  'split_hems':True,
+                  'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
+                  'L3_out_version':'0121',
+                  }
         
     #Correlation coefficients for uncertainty calculation
     corr_coef_uncer = {
@@ -58,7 +40,7 @@ def settings():
         'c_strat' : 0.3,
         'c_amf' : 0.3,
         'c_re' : 0
-                       }
+                        }
     
     #List of uncertainty variables to read 
     uncertainty_vars = {
@@ -148,15 +130,16 @@ def settings():
                                                         'long_name' : 'cloud_pressure',
                                                         'units' : 'hPa'}
                                                 },
-        'kernel_full' :                   {'conversion' : 1,
-                                            'out_name' : 'NO2_averaging_kernel',
-                                            'get_mean' : True,
-                                            'dimension' : '3d',
-                                            'attrs': {'description' : 'Column averaging kernel',
-                                                      'long_name' : 'full averaging kernel',
-                                                      'units' : '1'},
-                                            },
+        # 'kernel_full' :                   {'conversion' : 1,
+        #                                     'out_name' : 'NO2_averaging_kernel',
+        #                                     'get_mean' : True,
+        #                                     'dimension' : '3d',
+        #                                     'attrs': {'description' : 'Column averaging kernel',
+        #                                               'long_name' : 'full averaging kernel',
+        #                                               'units' : '1'},
+        #                                     },
                     }
+    
     
     #List of none time-dependent variables to read
     variables_1d = {
@@ -213,41 +196,30 @@ def settings():
                                                                       'long_name' : 'number of superobservations',
                                                                       'units' : '1'}
                                                           }
-                 }
+                  }
     
-    return date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer
+    
+    @dataclass 
+    class Settings:
+        date: str
+        main_sets: dict
+        variables_2d: dict
+        variables_1d: dict
+        uncertainty_vars: dict
+        calc_vars: dict
+        corr_coef_uncer: dict
+
+    
+    return Settings(date = date, 
+                    main_sets = main_sets, 
+                    variables_2d = variables_2d, 
+                    variables_1d = variables_1d, 
+                    uncertainty_vars = uncertainty_vars, 
+                    calc_vars = calc_vars, 
+                    corr_coef_uncer = corr_coef_uncer
+                    )
     
 
 
-    
 
 
-
-def main():
-    #Get settings
-    date, main_sets, variables_2d, variables_1d, uncertainty_vars, calc_vars, corr_coef_uncer = settings()
-    date = sys.argv[1]
-
-    #Get monthly mean
-    files = get_list_of_files(date,main_sets)
-    ds_out,weights = get_mean_all_vars(variables_2d,files,dataset=main_sets['dataset'],split_hems=main_sets['split_hems'])
-    ds_out = get_uncertainty(ds_out,weights,files,uncertainty_vars,corr_coef_uncer,split_hems=main_sets['split_hems'])
-    ds_out = add_count(ds_out,files,date)
-    ds_out = add_vars(ds_out,calc_vars)
-    ds_out = add_time(ds_out,files,date,weights,split_hems=main_sets['split_hems'])        
-    del weights
-        
-    #Save to file
-    out_filename = f'ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-{date}{files[0][-20:-18]}_{date}{files[-1][-20:-18]}-fv{main_sets["L3_out_version"]}.nc'
-    attrs = get_attrs(date,ds_out,main_sets)
-    ds2 = output_dataset(ds_out,attrs,{'variables_2d':variables_2d,'calc_vars':calc_vars},variables_1d,
-                         corr_coef_uncer,files,out_filename,date)
-    ds2.to_netcdf(f'/nobackup/users/glissena/data/TROPOMI/out_L3/{main_sets["dataset"]}/{out_filename}')
-    del ds_out,ds2
-
-if __name__ == "__main__": 
-    main()
-    
-    
-    
-    

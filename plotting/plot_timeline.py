@@ -6,7 +6,7 @@ Created on Wed Jun  5 12:16:30 2024
 @author: glissena
 """
 
-
+from glob import glob
 import os
 import calendar
 import scipy
@@ -32,17 +32,17 @@ dates_all = np.concatenate(
         np.arange(202101, 202113, 1),
     ]
 ).astype(str)
-
 data_trop = np.full((len(dates_all), 900, 1800), np.nan)
 trop_uncer = np.full((len(dates_all), 900, 1800), np.nan)
 for i, date in enumerate(dates_all):
-    f = f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/CCIp-L3-NO2_TC-TROPOMI_S5P_v020301-KNMI-{date}-fv0110.nc"
-    if os.path.isfile(f):
-        ds_trop = xr.open_dataset(f)
-        data_trop[i, :, :] = ds_trop.tropospheric_NO2_column_number_density.values
-        data_trop[i,:,:][ds_trop.qa_L3.values[0,:,:]==0] = np.nan
-        trop_uncer[i, :, :] = ds_trop.tropospheric_NO2_column_number_density_total_uncertainty.values
-        trop_uncer[i,:,:][ds_trop.qa_L3.values[0,:,:]==0] = np.nan
+    f = glob(f"/nobackup/users/glissena/data/TROPOMI/out_L3/02x02/ESACCI-PREC-L3-NO2_TC-TROPOMI_S5P-KNMI-1M-{date}01_{date}*-fv0121.nc")
+    if len(f)>0:
+        if os.path.isfile(f[0]):
+            ds_trop = xr.open_dataset(f[0])
+            data_trop[i, :, :] = ds_trop.tropospheric_NO2_column_number_density.values
+            data_trop[i,:,:][ds_trop.qa_L3.values[0,:,:]==0] = np.nan
+            trop_uncer[i, :, :] = ds_trop.tropospheric_NO2_column_number_density_total_uncertainty.values
+            trop_uncer[i,:,:][ds_trop.qa_L3.values[0,:,:]==0] = np.nan
 
 dates_float = np.round(dates_all.astype(int),-2)/100 + (abs(dates_all.astype(int))%100-1)/12
 
