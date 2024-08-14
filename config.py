@@ -153,7 +153,7 @@ def settings():
     
     
         
-    #Variables to calculate 2D
+    #Additional variables that will be calculated
     calc_vars = {
         'NO2_slant_column_number_density_troposphere' : {'func' : 'ds.tropospheric_NO2_column_number_density.values*ds.tropospheric_NO2_column_number_density_amf.values',
                                                          'out_name' : 'NO2_slant_column_number_density_troposphere',
