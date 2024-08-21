@@ -44,7 +44,7 @@ def main():
     attrs = output.get_attrs(settings.date, ds_out, settings.main_sets)
     ds2 = output.output_dataset(ds_out, attrs, {'variables_2d':settings.variables_2d,'calc_vars':settings.calc_vars},
                                 settings.variables_1d, settings.corr_coef_uncer, files, out_filename, settings.date)
-    ds2.to_netcdf(f"/nobackup/users/glissena/data/TROPOMI/out_L3/{settings.main_sets['dataset']}/{out_filename}")
+    ds2.to_netcdf(f"{settings.main_sets['path_out']}/{settings.main_sets['dataset']}/{out_filename}")
     del ds_out,ds2
 
 

@@ -4,6 +4,9 @@
 Created on Wed Nov 22 17:02:41 2023
 
 @author: Isolde Glissenaar
+
+Configuration settings for L3 temporal mean
+code. 
 """
 
 from dataclasses import dataclass
@@ -30,8 +33,12 @@ def settings():
 
     main_sets = {'dataset':'02x02',
                  'split_hems':True,
-                 'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
+                 'L2_version':'2.3.1',
                  'L3_out_version':'0121',
+                 'path_in':"/nobackup/users/glissena/data/TROPOMI/L2/superobs/",
+                 'path_L2':"/net/pc200252/nobackup_1/users/gomenrt/no2_tropomi/PAL_reduced/",  ##v2.3.1
+                 #'path_L2':"/net/pc230013/nobackup_1/users/gomenrt/no2v2_reduced",  ##v2.4+
+                 'path_out':"/nobackup/users/glissena/data/TROPOMI/out_L3/",
                  }
         
     #Correlation coefficients for uncertainty calculation

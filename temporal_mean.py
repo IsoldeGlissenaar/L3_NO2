@@ -4,6 +4,8 @@
 Created on Wed Nov 22 17:02:41 2023
 
 @author: Isolde Glissenaar
+
+Functions to calculate the temporal mean of variables.
 """
 
 import numpy as np

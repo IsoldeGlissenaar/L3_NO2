@@ -4,6 +4,9 @@
 Created on Wed Nov 22 17:02:41 2023
 
 @author: Isolde Glissenaar
+
+Functions to calculate the associated uncertainties 
+of temporal means.
 """
 
 import numpy as np
@@ -225,8 +228,8 @@ def standev1(ds,weights,files):
                    ( (no_superobs-1) * np.nansum(weights,axis=0)) )
     
     temporal_rep = std1/np.sqrt(n) * np.sqrt( (N-n)/(N-1) )
-    # temporal_rep = std1 / np.sqrt(ds['no_superobs'].values)
-    return xr.DataArray(data = std1.astype('float32'), dims = ['latitude','longitude']), xr.DataArray(data = temporal_rep.astype('float32'), dims = ['latitude','longitude'])
+    return (xr.DataArray(data = std1.astype('float32'), dims = ['latitude','longitude']), 
+            xr.DataArray(data = temporal_rep.astype('float32'), dims = ['latitude','longitude']))
 
 
 def standev2(ds,ds_in,weights,corr_coef_uncer):
@@ -236,8 +239,9 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
     Parameters
     ----------
     ds : xr Dataset
-        xarray Dataset with superobservation
-        orbits.
+        xarray Dataset with uncertainties.
+    ds_in : xr Dataset
+        Dataset with superobservation orbits.
     weights : array, float32
         weights used for averaging.
     corr_coef_uncer : list
@@ -247,7 +251,11 @@ def standev2(ds,ds_in,weights,corr_coef_uncer):
     Returns
     -------
     std2 : array, float32
+        measurement uncertainty with kernel.
+    std3 : array, float32
         measurement uncertainty.
+    sigma_sc_w : array, float32
+        slant column density uncertainty.
     """
     sigma_amf_w = calc_corr_uncorr_uncer(weights, ds['sigma_amf'], corr_coef_uncer['c_amf'])
     sigma_sc_w = calc_corr_uncorr_uncer(weights, ds['sigma_sc'], corr_coef_uncer['c_scd'])
@@ -273,6 +281,9 @@ def random_sys(ds,ds_in,weights,corr_coef_uncer):
     ds : xr Dataset
         xarray Dataset with superobservation
         orbits.
+    ds_in : xr Dataset
+        xarray Dataset with superobservation
+        orbits.
     weights : array, float32
         weights used for averaging.
     corr_coef_uncer : list
@@ -292,5 +303,6 @@ def random_sys(ds,ds_in,weights,corr_coef_uncer):
     
     random = np.sqrt(sigma_sc_w**2)
     systematic = np.sqrt(sigma_strat_w**2+sigma_amf_w**2)
-    return xr.DataArray(data = random, dims = ['latitude','longitude']), xr.DataArray(data = systematic, dims = ['latitude','longitude'])
+    return (xr.DataArray(data = random, dims = ['latitude','longitude']), 
+            xr.DataArray(data = systematic, dims = ['latitude','longitude']))
 

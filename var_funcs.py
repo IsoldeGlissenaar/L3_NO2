@@ -4,6 +4,9 @@
 Created on Wed Nov 22 17:02:41 2023
 
 @author: Isolde Glissenaar
+
+Functions to calculate extra variables for 
+the temporal mean.
 """
 
 import numpy as np
@@ -250,11 +253,11 @@ def add_land_water_mask(ds,attrs):
     resolution = attrs['geospatial_lat_resolution'].astype('float64')
     resolution = np.round(resolution,1)
     if resolution == 0.2:
-        f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_02x02.nc'
+        f = 'aux/land_water_classification_02x02.nc'
     elif resolution == 1.:
-        f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_1x1.nc'
+        f = 'aux/land_water_classification_1x1.nc'
     elif resolution == 2.:
-        f = '/nobackup/users/glissena/data/TROPOMI/aux/land_water_classification_20x25.nc'
+        f = 'aux/land_water_classification_20x25.nc'
     else:
         print(f"resolution: {resolution}")
         print('WARNING: No land_water_mask file available for this resolution')

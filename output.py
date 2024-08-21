@@ -4,6 +4,8 @@
 Created on Wed Nov 22 17:02:41 2023
 
 @author: Isolde Glissenaar
+
+Functions to create output dataset.
 """
 
 import numpy as np
@@ -36,9 +38,9 @@ def get_attrs(date,ds_out,main_sets):
     geospatial_lon_res = np.round(ds_out.longitude.values[5]-ds_out.longitude.values[4],1)
     
     #Get list of superobservation orbit files
-    in_folder = f'/net/pc200252/nobackup_1/users/gomenrt/no2_tropomi/PAL_reduced/{date}/'
-    if int(date)>202201:
-        in_folder = f'/net/pc230013/nobackup_1/users/gomenrt/no2v2_reduced/{date[:4]}/{date[4:]}/'
+    in_folder = f'{main_sets["path_L2"]}/{date}/'
+    if main_sets['L2_version']=='2.4':
+        in_folder = f'{main_sets["path_L2"]}/{date[:4]}/{date[4:]}/'
     files = [ f for f in os.listdir(in_folder) if os.path.isfile(os.path.join(in_folder,f)) ]
     def sort(f):
         return f[20:]
@@ -64,6 +66,7 @@ def get_attrs(date,ds_out,main_sets):
              'geospatial_lat_resolution': geospatial_lat_res,
              'geospatial_lon_resolution': geospatial_lon_res,
              'L1_version': L1_version,
+             'L2_version': main_sets['L2_version'],
              'L3_out_version': main_sets['L3_out_version']
              }
     return attrs
@@ -176,7 +179,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
                  'temporal_uncertainty_correlation_re':corr_coef_uncer['c_re'],
                  'comment':'',
                  'L1_version':attrs['L1_version'],
-                 'L2_version':'2.3.1',
+                 'L2_version':attrs['L2_version'],
                  'tracking_id':'https://doi.org/10.21944/cci-no2-tropomi-l3',
                  'id':out_filename,
                  'product_version':attrs['L3_out_version'],
