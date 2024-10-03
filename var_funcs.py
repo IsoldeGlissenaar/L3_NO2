@@ -119,7 +119,7 @@ def add_time(ds,files,date,weights,split_hems=False):
         Same as input ds but now with added calculated variables.
     """
 
-    split_lon=True
+    split_lon=False
     
     if split_hems:
         regions = ['SH','NH']
@@ -188,10 +188,10 @@ def add_time(ds,files,date,weights,split_hems=False):
     t = t.astype('double')
                  
     ds['eff_date'] = xr.DataArray(data=time.astype('double'),
-                              dims = ['latitude','longitude']
+                                  dims = ['latitude','longitude'],
                               )
     ds['eff_frac_day'] = xr.DataArray(data=mean_local_time/86400.,
-                              dims = ['latitude','longitude']
+                                      dims = ['latitude','longitude'],
                               )
     ds['time'] = xr.DataArray(data = [t],
                               dims = ['time']
@@ -254,6 +254,8 @@ def add_land_water_mask(ds,attrs):
     resolution = np.round(resolution,1)
     if resolution == 0.2:
         f = 'aux/land_water_classification_02x02.nc'
+    if resolution == 0.5:
+        f = 'aux/land_water_classification_05x05.nc'
     elif resolution == 1.:
         f = 'aux/land_water_classification_1x1.nc'
     elif resolution == 2.:

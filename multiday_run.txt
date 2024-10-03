@@ -1,43 +1,43 @@
 #!/bin/bash
 
-#for i in {201901..201912}
-#do
-#    echo $i
-#    python monthly_mean.py $i
-#done
-
-#for i in {201805..201812}
-#do
-#    echo $i
-#    python main.py $i
-#done
-
-#for i in {202001..202012}
-#do
-#    echo $i
-#    python main.py $i
-#done
-
-#for i in {202101..202112}
-#do
-#    echo $i
-#    python main.py $i
-#done
-
-for i in {202201..202212}
+for i in {201901..201912}
 do
     echo $i
     python main.py $i
 done
 
-for i in {202301..202312}
+for i in {201805..201812}
 do
     echo $i
     python main.py $i
 done
 
-for i in {202401..202405}
+for i in {202001..202012}
 do
     echo $i
     python main.py $i
 done
+
+for i in {202101..202112}
+do
+    echo $i
+    python main.py $i
+done
+
+#for i in {202201..202212}
+#do
+#    echo $i
+#    python main.py $i
+#done
+
+#for i in {202301..202312}
+#do
+#    echo $i
+#    python main.py $i
+#done
+
+#for i in {202401..202405}
+#do
+#    echo $i
+#    python main.py $i
+#done

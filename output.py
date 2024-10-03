@@ -108,7 +108,7 @@ def output_dataset(ds,attrs,variables_2d,variables_1d,corr_coef_uncer,files,out_
 
     #Create dataset with dimensions and attributes
     ds2 = xr.Dataset(data_vars = {
-                'time' : xr.DataArray(data = ds.time.values,
+                'time' : xr.DataArray(data = ds.time.values.astype('int32'),
                                       dims = ['time'],
                                       attrs = {'description':'start date of monthly mean',
                                                'long_name':'number of days since 1995-01-01',
