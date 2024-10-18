@@ -69,6 +69,8 @@ python main.py 'yyyymm'
 
 where yyyymm is for example 202006 for June 2020.
 
+Run add_units.sh to add units to lon\_bounds and lat\_bounds.
+
 
 
 <!-- END CONTENT -->
